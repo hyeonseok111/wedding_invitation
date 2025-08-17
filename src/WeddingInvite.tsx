@@ -1,6 +1,4 @@
 import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 export default function WeddingInvite() {
   return (
@@ -24,20 +22,18 @@ export default function WeddingInvite() {
           className="w-full rounded-2xl shadow-md mb-6"
         />
 
-        <Card>
-          <CardContent className="py-6 space-y-3">
-            <p className="text-sm text-gray-700">사랑이 봄처럼 시작되어</p>
-            <p className="text-sm text-gray-700">겨울의 약속으로 이어집니다.</p>
-            <p className="text-sm text-gray-700">하루하루의 마음이 저희의 계절을 만들었으니</p>
-            <p className="text-sm text-gray-700">함께 오셔서 따뜻히 축복해 주시면 감사하겠습니다.</p>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-xl shadow-md py-6 px-4 space-y-3">
+          <p className="text-sm text-gray-700">사랑이 봄처럼 시작되어</p>
+          <p className="text-sm text-gray-700">겨울의 약속으로 이어집니다.</p>
+          <p className="text-sm text-gray-700">하루하루의 마음이 저희의 계절을 만들었으니</p>
+          <p className="text-sm text-gray-700">함께 오셔서 따뜻히 축복해 주시면 감사하겠습니다.</p>
+        </div>
 
         <div className="mt-6 space-y-3">
-          <Button className="w-full" onClick={() => window.open("https://naver.me/GgEXAMPLE", "_blank")}>오시는 길</Button>
-          <Button className="w-full" onClick={() => window.open("https://open.kakao.com/o/somelink", "_blank")}>신랑에게 연락</Button>
-          <Button className="w-full" onClick={() => window.open("https://open.kakao.com/o/anotherlink", "_blank")}>신부에게 연락</Button>
-          <Button className="w-full" onClick={() => window.open("https://paylink.com/gift", "_blank")}>마음 전하실 곳</Button>
+          <button className="w-full bg-pink-100 hover:bg-pink-200 text-sm text-gray-800 py-2 px-4 rounded" onClick={() => window.open("https://naver.me/GgEXAMPLE", "_blank")}>오시는 길</button>
+          <button className="w-full bg-pink-100 hover:bg-pink-200 text-sm text-gray-800 py-2 px-4 rounded" onClick={() => window.open("https://open.kakao.com/o/somelink", "_blank")}>신랑에게 연락</button>
+          <button className="w-full bg-pink-100 hover:bg-pink-200 text-sm text-gray-800 py-2 px-4 rounded" onClick={() => window.open("https://open.kakao.com/o/anotherlink", "_blank")}>신부에게 연락</button>
+          <button className="w-full bg-pink-100 hover:bg-pink-200 text-sm text-gray-800 py-2 px-4 rounded" onClick={() => window.open("https://paylink.com/gift", "_blank")}>마음 전하실 곳</button>
         </div>
 
         <div className="mt-10">
