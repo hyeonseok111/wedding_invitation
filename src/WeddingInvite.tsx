@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-/** ───────── 설정 ───────── */
-const MAIN_IMG = "/images/album/Bloom_25_06_13_073904.JPG"; // 메인(히어로) 사진
+/** ───────── 고정 텍스트/색상 설정 ───────── */
 const BGM_SRC = "/bgm/romantic-melody.mp3";
 const HIGHLIGHT = "#d98282";
 
@@ -10,8 +9,8 @@ const VENUE_NAME = "아펠가모 공덕 라로브홀";
 const VENUE_ADDR = "서울 마포구 마포대로 92 효성해링턴스퀘어 B동 7층";
 const VENUE_TEL = "02-2197-0230";
 
-const NAVER_VIEW_URL = "https://naver.me/x8DEFv5E"; // 자세히 보기 링크
-// 페이지 내 지도 미리보기(퍼가기 src로 교체 권장; 임시 entry URL)
+const NAVER_VIEW_URL = "https://naver.me/x8DEFv5E"; // 자세히 보기
+// 페이지 내 미리보기(퍼가기 src 권장; 임시 entry URL)
 const NAVER_EMBED_SRC =
   "https://map.naver.com/p/entry/place/1929913788?c=15.00,0,0,0,dh";
 
@@ -22,37 +21,35 @@ const BRIDE_TEL = "010-3350-7890";
 
 // 계좌(신랑/신부 3개씩)
 const GROOM_ACCOUNTS = [
-  { bank: "국민", number: "1002-763-669917", holder: "신랑" },
-  { bank: "국민", number: "110-123-456789", holder: "신랑아버님" },
-  { bank: "국민", number: "220-987-654321", holder: "신랑어머님" },
+  { bank: "우리은행", number: "1002-743-669917", holder: "이현석" },
+  { bank: "국민", number: "000-000-000000", holder: "이영철" },
+  { bank: "국민", number: "000-000-000000", holder: "이경희" },
 ];
 const BRIDE_ACCOUNTS = [
-  { bank: "국민", number: "333-111-222333", holder: "신부" },
-  { bank: "국민", number: "444-555-666777", holder: "신부아버님" },
-  { bank: "국민", number: "888-999-000111", holder: "신부어머님" },
+  { bank: "국민", number: "000-000-000000", holder: "유지현" },
+  { bank: "국민", number: "000-000-000000", holder: "유기만" },
+  { bank: "국민", number: "000-000-000000", holder: "정원경" },
 ];
 
-/** ─────────────────────── */
+/** index.json 타입 */
+type AlbumIndex = {
+  main: string;     // 메인 이미지 파일명
+  album: string[];  // 앨범 파일명 리스트
+};
 
 export default function WeddingInvite() {
-  /* BGM (기본 정지) */
+  /** ── BGM (기본 정지) ── */
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const toggleBgm = async () => {
     const a = audioRef.current;
     if (!a) return;
     if (a.paused) {
-      try {
-        await a.play();
-        setIsPlaying(true);
-      } catch {}
-    } else {
-      a.pause();
-      setIsPlaying(false);
-    }
+      try { await a.play(); setIsPlaying(true); } catch {}
+    } else { a.pause(); setIsPlaying(false); }
   };
 
-  /* D-day */
+  /** ── D-day ── */
   const dDay = useMemo(() => {
     const event = new Date(WEDDING_ISO);
     const today = new Date();
@@ -61,7 +58,7 @@ export default function WeddingInvite() {
     return Math.ceil((startOf(event) - startOf(today)) / 86400000);
   }, []);
 
-  /* 2025-12 달력 */
+  /** ── 2025-12 달력 ── */
   const days = ["일", "월", "화", "수", "목", "금", "토"];
   const dec2025Cells = useMemo(() => {
     const first = new Date("2025-12-01T00:00:00+09:00");
@@ -73,45 +70,47 @@ export default function WeddingInvite() {
     return cells;
   }, []);
 
-  /* 앨범 목록: index.json(선택) → 내림차순, 폴백(01..+확장자 시도) */
-  const [albumFiles, setAlbumFiles] = useState<string[] | null>(null);
+  /** ── index.json 로드 ── */
+  const [albumIndex, setAlbumIndex] = useState<AlbumIndex | null>(null);
+  const [albumError, setAlbumError] = useState<string | null>(null);
 
   useEffect(() => {
     let canceled = false;
     const load = async () => {
       try {
         const res = await fetch("/images/album/index.json", { cache: "no-store" });
-        if (res.ok) {
-          const list = (await res.json()) as string[];
-          // 이름 내림차순 정렬
-          list.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
-          if (!canceled) setAlbumFiles(list);
-          return;
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = (await res.json()) as AlbumIndex;
+
+        // 이름 내림차순 정렬 + main과 중복 제거
+        const sorted = [...data.album]
+          .filter((f) => f && typeof f === "string")
+          .map((f) => f.trim())
+          .filter(Boolean)
+          .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+
+        const deduped = sorted.filter((f) => f !== data.main);
+
+        if (!canceled) {
+          setAlbumIndex({ main: data.main, album: deduped });
+          setAlbumError(null);
         }
-      } catch {}
-      // 폴백: 번호 기반 자동 시도(최대 60장)
-      const candidates: string[] = [];
-      for (let i = 1; i <= 60; i++) {
-        const id = String(i).padStart(2, "0");
-        const exts = ["jpg", "JPG", "png", "jpeg", "webp"];
-        for (const ext of exts) {
-          candidates.push(`${id}.${ext}`);
+      } catch (e: any) {
+        if (!canceled) {
+          setAlbumIndex(null);
+          setAlbumError("앨범 목록(index.json)을 불러오지 못했습니다.");
         }
       }
-      if (!canceled) setAlbumFiles(candidates);
     };
     load();
-    return () => {
-      canceled = true;
-    };
+    return () => { canceled = true; };
   }, []);
 
-  /* 복사 */
+  const MAIN_IMG = albumIndex ? `/images/album/${albumIndex.main}` : "/images/album/Bloom_25_06_13_073904.JPG";
+
+  /** ── 복사 ── */
   const copy = async (txt: string) => {
-    try {
-      await navigator.clipboard.writeText(txt);
-      alert(`복사되었습니다: ${txt}`);
-    } catch {}
+    try { await navigator.clipboard.writeText(txt); alert(`복사되었습니다: ${txt}`); } catch {}
   };
 
   return (
@@ -190,16 +189,26 @@ export default function WeddingInvite() {
             ALBUM
           </h3>
 
-          {/* index.json이 있으면 리스트 그대로, 없으면 폴백 시도 */}
+          {albumError && (
+            <p className="text-sm text-red-500 text-center mb-3">{albumError}</p>
+          )}
+
           <div className="grid grid-cols-3 gap-3">
-            {albumFiles?.map((name, idx) => (
-              <AlbumImage key={`${name}-${idx}`} name={name} />
+            {albumIndex?.album.map((file, idx) => (
+              <figure key={`${file}-${idx}`} className="rounded-xl overflow-hidden bg-gray-100">
+                <img
+                  src={`/images/album/${file}`}
+                  alt={`album-${idx}`}
+                  loading="lazy"
+                  className="w-full h-full object-cover aspect-[4/3]"
+                  onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+                />
+              </figure>
             ))}
           </div>
 
           <p className="text-xs text-gray-500 text-center mt-3">
-            앨범 폴더: <code>/public/images/album/</code>.  
-            <br />가능하면 <code>index.json</code>에 파일명을 넣으면 내림차순으로 표시합니다.
+            앨범 폴더: <code>/public/images/album/</code> · <code>index.json</code>의 파일명을 기준으로 표시(내림차순)
           </p>
         </div>
       </section>
@@ -210,7 +219,7 @@ export default function WeddingInvite() {
           <h2 className="text-xl font-semibold mb-4" style={{ color: HIGHLIGHT }}>
             오시는 길
           </h2>
-          <p className="text-lg font-bold">{VENUE_NAME}</p>
+        <p className="text-lg font-bold">{VENUE_NAME}</p>
           <p className="mt-1 text-gray-700">{VENUE_ADDR}</p>
           <p className="mt-0.5 text-gray-700">{VENUE_TEL}</p>
 
@@ -274,6 +283,7 @@ function NoteIcon({
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      {/* 정지일 때만 대각선 */}
       {muted && <path d="M4 20L20 4" strokeWidth="2" strokeLinecap="round" />}
     </svg>
   );
@@ -421,7 +431,7 @@ function InfoBlock({
   );
 }
 
-/* 아코디언 */
+/* 심플 아코디언 */
 function Accordion({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
@@ -463,53 +473,5 @@ function AccountList({
         </li>
       ))}
     </ul>
-  );
-}
-
-/* 앨범 한 칸: 이름을 그대로 사용. 폴백 시 01..+확장자 자동 시도 */
-function AlbumImage({ name }: { name: string }) {
-  // name이 완전 경로가 아니면 /images/album/를 붙여준다.
-  const url = name.startsWith("/") ? name : `/images/album/${name}`;
-  const [src, setSrc] = useState(url);
-  const [fallbackTried, setFallbackTried] = useState(false);
-
-  // 폴백: index.json이 없을 때 candidates 형태로 넘어오면 확장자 자동 시도
-  useEffect(() => {
-    if (/\.(png|jpg|jpeg|webp|JPG)$/i.test(name)) return;
-    if (!fallbackTried) {
-      setFallbackTried(true);
-    }
-  }, [name, fallbackTried]);
-
-  const onError = () => {
-    // 폴백 후보("01.jpg","01.JPG",...) 같은 경우 다음 후보로 넘어가게끔
-    const match = src.match(/^(.*?)(\d{2})(?:\.(\w+))?$/);
-    if (!match) {
-      // 일반 파일인데 실패하면 숨김
-      setSrc("");
-      return;
-    }
-    const base = match[1];
-    const id = match[2];
-    const currentExt = match[3];
-    const order = ["jpg", "JPG", "png", "jpeg", "webp"];
-    const idx = order.indexOf(currentExt || "");
-    const next = order[idx + 1];
-    if (next) setSrc(`${base}${id}.${next}`);
-    else setSrc("");
-  };
-
-  if (!src) return null;
-
-  return (
-    <figure className="rounded-xl overflow-hidden bg-gray-100">
-      <img
-        src={src}
-        alt="album"
-        loading="lazy"
-        className="w-full h-full object-cover aspect-[4/3]"
-        onError={onError}
-      />
-    </figure>
   );
 }
