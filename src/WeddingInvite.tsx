@@ -1,27 +1,26 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
-/** ───────── 설정(필요시 여기만 수정) ───────── */
-const HERO_IMG = "/Bloom_25_06_13_073904.JPG";   // 루트(/public) 기준
-const BGM_SRC  = "/bgm/romantic-melody.mp3";
+/** ───────── 설정 ───────── */
+const MAIN_IMG = "/images/album/Bloom_25_06_13_073904.JPG"; // 메인(히어로) 사진
+const BGM_SRC = "/bgm/romantic-melody.mp3";
 const HIGHLIGHT = "#d98282";
 
 const WEDDING_ISO = "2025-12-07T15:30:00+09:00";
-const VENUE_NAME  = "아펠가모 공덕 라로브홀";
-const VENUE_ADDR  = "서울 마포구 마포대로 92 효성해링턴스퀘어 B동 7층";
-const VENUE_TEL   = "02-2197-0230";
+const VENUE_NAME = "아펠가모 공덕 라로브홀";
+const VENUE_ADDR = "서울 마포구 마포대로 92 효성해링턴스퀘어 B동 7층";
+const VENUE_TEL = "02-2197-0230";
 
-// 지도 자세히 보기(네이버 링크)
-const NAVER_VIEW_URL = "https://naver.me/x8DEFv5E";
-// 페이지 내 미리보기(퍼가기 URL 권장, 임시 entry URL)
+const NAVER_VIEW_URL = "https://naver.me/x8DEFv5E"; // 자세히 보기 링크
+// 페이지 내 지도 미리보기(퍼가기 src로 교체 권장; 임시 entry URL)
 const NAVER_EMBED_SRC =
   "https://map.naver.com/p/entry/place/1929913788?c=15.00,0,0,0,dh";
 
 const GROOM_LINE = "이영철 · 이경희 의 아들 현석";
 const BRIDE_LINE = "유기만 · 정원경 의 딸 지현";
-const GROOM_TEL  = "010-4100-5960";
-const BRIDE_TEL  = "010-3350-7890";
+const GROOM_TEL = "010-4100-5960";
+const BRIDE_TEL = "010-3350-7890";
 
-// 계좌 정보(신랑·신부 각 3개)
+// 계좌(신랑/신부 3개씩)
 const GROOM_ACCOUNTS = [
   { bank: "국민", number: "1002-763-669917", holder: "신랑" },
   { bank: "국민", number: "110-123-456789", holder: "신랑아버님" },
@@ -33,26 +32,32 @@ const BRIDE_ACCOUNTS = [
   { bank: "국민", number: "888-999-000111", holder: "신부어머님" },
 ];
 
-const PHOTO_COUNT = 18; // /public/images/album/01,02,03... (확장자 자동)
-/** ─────────────────────────────────────────── */
+/** ─────────────────────── */
 
 export default function WeddingInvite() {
-  /* BGM: 기본 정지 */
+  /* BGM (기본 정지) */
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const toggleBgm = async () => {
     const a = audioRef.current;
     if (!a) return;
     if (a.paused) {
-      try { await a.play(); setIsPlaying(true); } catch {}
-    } else { a.pause(); setIsPlaying(false); }
+      try {
+        await a.play();
+        setIsPlaying(true);
+      } catch {}
+    } else {
+      a.pause();
+      setIsPlaying(false);
+    }
   };
 
   /* D-day */
   const dDay = useMemo(() => {
     const event = new Date(WEDDING_ISO);
     const today = new Date();
-    const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const startOf = (d: Date) =>
+      new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
     return Math.ceil((startOf(event) - startOf(today)) / 86400000);
   }, []);
 
@@ -68,12 +73,45 @@ export default function WeddingInvite() {
     return cells;
   }, []);
 
-  /* 앨범 파일 번호 */
-  const albumNumbers = Array.from({ length: PHOTO_COUNT }, (_, i) => i + 1);
+  /* 앨범 목록: index.json(선택) → 내림차순, 폴백(01..+확장자 시도) */
+  const [albumFiles, setAlbumFiles] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    let canceled = false;
+    const load = async () => {
+      try {
+        const res = await fetch("/images/album/index.json", { cache: "no-store" });
+        if (res.ok) {
+          const list = (await res.json()) as string[];
+          // 이름 내림차순 정렬
+          list.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+          if (!canceled) setAlbumFiles(list);
+          return;
+        }
+      } catch {}
+      // 폴백: 번호 기반 자동 시도(최대 60장)
+      const candidates: string[] = [];
+      for (let i = 1; i <= 60; i++) {
+        const id = String(i).padStart(2, "0");
+        const exts = ["jpg", "JPG", "png", "jpeg", "webp"];
+        for (const ext of exts) {
+          candidates.push(`${id}.${ext}`);
+        }
+      }
+      if (!canceled) setAlbumFiles(candidates);
+    };
+    load();
+    return () => {
+      canceled = true;
+    };
+  }, []);
 
   /* 복사 */
   const copy = async (txt: string) => {
-    try { await navigator.clipboard.writeText(txt); alert(`복사되었습니다: ${txt}`); } catch {}
+    try {
+      await navigator.clipboard.writeText(txt);
+      alert(`복사되었습니다: ${txt}`);
+    } catch {}
   };
 
   return (
@@ -109,7 +147,7 @@ export default function WeddingInvite() {
       <section className="max-w-md mx-auto px-4">
         <div className="rounded-2xl overflow-hidden shadow bg-white">
           <img
-            src={HERO_IMG}
+            src={MAIN_IMG}
             alt="메인 웨딩 사진"
             className="w-full h-[52svh] object-cover"
             loading="lazy"
@@ -133,7 +171,7 @@ export default function WeddingInvite() {
         </div>
       </section>
 
-      {/* 혼주/본인 라인 — 아이콘은 라인 오른쪽에 */}
+      {/* 연락 라인 */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <div className="bg-white rounded-2xl shadow p-5">
           <ContactRow label={GROOM_LINE} tel={GROOM_TEL} />
@@ -143,41 +181,25 @@ export default function WeddingInvite() {
       </section>
 
       {/* 달력 + D-day */}
-      <section className="max-w-md mx-auto px-5 mt-6">
-        <div className="bg-white rounded-2xl shadow p-6">
-          <h3 className="text-center text-lg font-medium">12월</h3>
-          <div className="grid grid-cols-7 gap-3 text-center text-sm font-semibold mt-3">
-            {days.map((d) => <div key={d}>{d}</div>)}
-          </div>
-          <div className="grid grid-cols-7 gap-3 text-center text-lg mt-2">
-            {dec2025Cells.map((n, i) =>
-              n === null ? <div key={i} /> : (
-                <div
-                  key={i}
-                  className={`w-10 h-10 mx-auto flex items-center justify-center rounded-full ${n===7?"text-white font-bold":"text-gray-800"}`}
-                  style={n===7?{backgroundColor:HIGHLIGHT}:{}}>
-                  {n}
-                </div>
-              )
-            )}
-          </div>
-          <p className="mt-5 text-center text-base" style={{ color: HIGHLIGHT }}>
-            이현석 ❤ 유지현 의 결혼식 {dDay}일 전
-          </p>
-        </div>
-      </section>
+      <CalendarCard days={days} cells={dec2025Cells} highlight={HIGHLIGHT} dDay={dDay} />
 
-      {/* 앨범 — 확장자 자동 시도 */}
+      {/* 앨범 */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <div className="bg-white rounded-2xl shadow p-5">
-          <h3 className="text-center text-lg tracking-wide mb-4" style={{ color: HIGHLIGHT }}>ALBUM</h3>
+          <h3 className="text-center text-lg tracking-wide mb-4" style={{ color: HIGHLIGHT }}>
+            ALBUM
+          </h3>
+
+          {/* index.json이 있으면 리스트 그대로, 없으면 폴백 시도 */}
           <div className="grid grid-cols-3 gap-3">
-            {Array.from({ length: PHOTO_COUNT }, (_, i) => i + 1).map((num) => (
-              <AlbumImage key={num} num={num}/>
+            {albumFiles?.map((name, idx) => (
+              <AlbumImage key={`${name}-${idx}`} name={name} />
             ))}
           </div>
+
           <p className="text-xs text-gray-500 text-center mt-3">
-            /public/images/album/ 에 01, 02 … 번호로 저장하면 확장자와 무관하게 자동 표시됩니다.
+            앨범 폴더: <code>/public/images/album/</code>.  
+            <br />가능하면 <code>index.json</code>에 파일명을 넣으면 내림차순으로 표시합니다.
           </p>
         </div>
       </section>
@@ -185,7 +207,9 @@ export default function WeddingInvite() {
       {/* 오시는 길 */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <div className="bg-white rounded-2xl shadow p-6 text-center">
-          <h2 className="text-xl font-semibold mb-4" style={{ color: HIGHLIGHT }}>오시는 길</h2>
+          <h2 className="text-xl font-semibold mb-4" style={{ color: HIGHLIGHT }}>
+            오시는 길
+          </h2>
           <p className="text-lg font-bold">{VENUE_NAME}</p>
           <p className="mt-1 text-gray-700">{VENUE_ADDR}</p>
           <p className="mt-0.5 text-gray-700">{VENUE_TEL}</p>
@@ -215,42 +239,19 @@ export default function WeddingInvite() {
       </section>
 
       {/* 교통/주차/안내 */}
-      <section className="max-w-md mx-auto px-5 mt-6">
-        <div className="bg-white rounded-2xl shadow p-6">
-          <InfoBlock title="지하철">
-            공덕역 ⑦번 출구 (5호선, 6호선) [도보 2분] <br />
-            공덕역 ⑩번 출구 (경의중앙선, 공항철도) [도보 1분]
-          </InfoBlock>
-          <div className="my-4 h-px bg-gray-100" />
-          <InfoBlock title="버스">
-            파란 간선 : 160, 260, 600 <br />
-            초록 지선 : 7013A, 7013B, 7611 <br />
-            마을버스 : 마포01, 마포02, 마포10 <br />
-            일반버스 : 1002
-          </InfoBlock>
-          <div className="my-4 h-px bg-gray-100" />
-          <InfoBlock title="주차">
-            효성해링턴스퀘어 본 건물 주차 (2시간 무료) <br />
-            [외부 주차장 : SUN 장학빌딩, 하이파킹 공덕역점, 경보 주차장]
-          </InfoBlock>
-          <div className="my-4 h-px bg-gray-100" />
-          <InfoBlock title="추가 안내">
-            예식장 내 화환 반입이 불가하여 마음만 감사히 받겠습니다.
-          </InfoBlock>
-        </div>
-      </section>
+      <InfoSections highlight={HIGHLIGHT} />
 
-      {/* 마음 전하는 곳(아코디언) */}
+      {/* 마음 전하는 곳 */}
       <section className="max-w-md mx-auto px-5 mt-6 pb-16">
         <div className="bg-white rounded-2xl shadow p-6">
           <h2 className="text-center text-xl font-semibold mb-4" style={{ color: HIGHLIGHT }}>
             마음을 전하는 곳
           </h2>
           <Accordion title="신랑측 계좌번호">
-            <AccountList accounts={GROOM_ACCOUNTS} onCopy={copy} />
+            <AccountList accounts={GROOM_ACCOUNTS} onCopy={(v) => copy(v)} />
           </Accordion>
           <Accordion title="신부측 계좌번호">
-            <AccountList accounts={BRIDE_ACCOUNTS} onCopy={copy} />
+            <AccountList accounts={BRIDE_ACCOUNTS} onCopy={(v) => copy(v)} />
           </Accordion>
         </div>
       </section>
@@ -260,37 +261,45 @@ export default function WeddingInvite() {
 
 /* ───────── 하위 컴포넌트 ───────── */
 
-/* 음표 아이콘(정지: 대각선 슬래시 겹침) */
-function NoteIcon({ muted = false, ...props }: { muted?: boolean } & React.SVGProps<SVGSVGElement>) {
+function NoteIcon({
+  muted = false,
+  ...props
+}: { muted?: boolean } & React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
       {/* 음표 */}
-      <path d="M12 3v10.5a3.5 3.5 0 1 1-2-3.2V6l8-2v7.5a3.5 3.5 0 1 1-2-3.2V4.2l-4 1" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
-      {/* 정지일 때만 슬래시 */}
+      <path
+        d="M12 3v10.5a3.5 3.5 0 1 1-2-3.2V6l8-2v7.5a3.5 3.5 0 1 1-2-3.2V4.2l-4 1"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
       {muted && <path d="M4 20L20 4" strokeWidth="2" strokeLinecap="round" />}
     </svg>
   );
 }
 
-/* 심플한 아이콘(전화/문자) */
 function PhoneIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
-        d="M22 16.5v3a2 2 0 0 1-2.2 2A19.5 19.5 0 0 1 2.5 4.2 2 2 0 0 1 4.5 2h3a2 2 0 0 1 2 1.7c.12.8.32 1.6.58 2.4a2 2 0 0 1-.44 2.1L9 10a16 16 0 0 0 5 5l.7-1.1a2 2 0 0 1 2.1-.45c.8.26 1.6.46 2.4.58A2 2 0 0 1 22 16.5z" />
+      <path
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M22 16.5v3a2 2 0 0 1-2.2 2A19.5 19.5 0 0 1 2.5 4.2 2 2 0 0 1 4.5 2h3a2 2 0 0 1 2 1.7c.12.8.32 1.6.58 2.4a2 2 0 0 1-.44 2.1L9 10a16 16 0 0 0 5 5l.7-1.1a2 2 0 0 1 2.1-.45c.8.26 1.6.46 2.4.58A2 2 0 0 1 22 16.5z"
+      />
     </svg>
   );
 }
 function SmsIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <rect x="3" y="4" width="18" height="14" rx="3" strokeWidth="1.8"/>
-      <path d="M7 9h10M7 13h6" strokeWidth="1.8" strokeLinecap="round"/>
+      <rect x="3" y="4" width="18" height="14" rx="3" strokeWidth="1.8" />
+      <path d="M7 9h10M7 13h6" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
 
-/* 연락 라인: 오른쪽에 아이콘 두 개(전화/문자) */
 function ContactRow({ label, tel }: { label: string; tel: string }) {
   const digits = tel.replace(/[^0-9]/g, "");
   return (
@@ -303,7 +312,7 @@ function ContactRow({ label, tel }: { label: string; tel: string }) {
           title="전화 걸기"
           className="w-9 h-9 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-gray-700"
         >
-          <PhoneIcon width={18} height={18}/>
+          <PhoneIcon width={18} height={18} />
         </a>
         <a
           href={`sms:${digits}`}
@@ -312,29 +321,115 @@ function ContactRow({ label, tel }: { label: string; tel: string }) {
           className="w-9 h-9 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-gray-700"
           style={{ color: HIGHLIGHT }}
         >
-          <SmsIcon width={18} height={18}/>
+          <SmsIcon width={18} height={18} />
         </a>
       </div>
     </div>
   );
 }
 
-/* 정보 블록 */
-function InfoBlock({ title, children }: { title: string; children: React.ReactNode }) {
+function CalendarCard({
+  days,
+  cells,
+  highlight,
+  dDay,
+}: {
+  days: string[];
+  cells: (number | null)[];
+  highlight: string;
+  dDay: number;
+}) {
+  return (
+    <section className="max-w-md mx-auto px-5 mt-6">
+      <div className="bg-white rounded-2xl shadow p-6">
+        <h3 className="text-center text-lg font-medium">12월</h3>
+        <div className="grid grid-cols-7 gap-3 text-center text-sm font-semibold mt-3">
+          {days.map((d) => (
+            <div key={d}>{d}</div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-3 text-center text-lg mt-2">
+          {cells.map((n, i) =>
+            n === null ? (
+              <div key={i} />
+            ) : (
+              <div
+                key={i}
+                className={`w-10 h-10 mx-auto flex items-center justify-center rounded-full ${
+                  n === 7 ? "text-white font-bold" : "text-gray-800"
+                }`}
+                style={n === 7 ? { backgroundColor: highlight } : {}}
+              >
+                {n}
+              </div>
+            )
+          )}
+        </div>
+        <p className="mt-5 text-center text-base" style={{ color: highlight }}>
+          이현석 ❤ 유지현 의 결혼식 {dDay}일 전
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function InfoSections({ highlight }: { highlight: string }) {
+  return (
+    <section className="max-w-md mx-auto px-5 mt-6">
+      <div className="bg-white rounded-2xl shadow p-6">
+        <InfoBlock title="지하철" highlight={highlight}>
+          공덕역 ⑦번 출구 (5호선, 6호선) [도보 2분] <br />
+          공덕역 ⑩번 출구 (경의중앙선, 공항철도) [도보 1분]
+        </InfoBlock>
+        <div className="my-4 h-px bg-gray-100" />
+        <InfoBlock title="버스" highlight={highlight}>
+          파란 간선 : 160, 260, 600 <br />
+          초록 지선 : 7013A, 7013B, 7611 <br />
+          마을버스 : 마포01, 마포02, 마포10 <br />
+          일반버스 : 1002
+        </InfoBlock>
+        <div className="my-4 h-px bg-gray-100" />
+        <InfoBlock title="주차" highlight={highlight}>
+          효성해링턴스퀘어 본 건물 주차 (2시간 무료) <br />
+          [외부 주차장 : SUN 장학빌딩, 하이파킹 공덕역점, 경보 주차장]
+        </InfoBlock>
+        <div className="my-4 h-px bg-gray-100" />
+        <InfoBlock title="추가 안내" highlight={highlight}>
+          예식장 내 화환 반입이 불가하여 마음만 감사히 받겠습니다.
+        </InfoBlock>
+      </div>
+    </section>
+  );
+}
+
+function InfoBlock({
+  title,
+  highlight,
+  children,
+}: {
+  title: string;
+  highlight: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
-      <h4 className="text-base font-semibold mb-1.5" style={{ color: HIGHLIGHT }}>{title}</h4>
+      <h4 className="text-base font-semibold mb-1.5" style={{ color: highlight }}>
+        {title}
+      </h4>
       <p className="text-[15px] leading-7 text-gray-700">{children}</p>
     </div>
   );
 }
 
-/* 심플 아코디언 */
+/* 아코디언 */
 function Accordion({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="border rounded-xl bg-white shadow-sm mb-3 overflow-hidden">
-      <button onClick={() => setOpen(v=>!v)} className="w-full flex items-center justify-between px-4 py-3 text-left">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left"
+      >
         <span className="text-[15px]">{title}</span>
         <span className="text-xl">{open ? "▾" : "▸"}</span>
       </button>
@@ -343,10 +438,14 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
   );
 }
 
-/* 계좌 목록: 복사 시 '계좌번호 그대로' 복사 */
+/* 계좌 리스트(계좌번호 원문 복사) */
 function AccountList({
-  accounts, onCopy,
-}: { accounts: { bank: string; number: string; holder: string }[]; onCopy: (txt: string)=>void; }) {
+  accounts,
+  onCopy,
+}: {
+  accounts: { bank: string; number: string; holder: string }[];
+  onCopy: (txt: string) => void;
+}) {
   return (
     <ul className="space-y-3">
       {accounts.map((a, i) => (
@@ -356,7 +455,7 @@ function AccountList({
             <div className="text-gray-500">{a.holder}</div>
           </div>
           <button
-            onClick={() => onCopy(a.number)}   // 하이픈 포함 그대로 복사
+            onClick={() => onCopy(a.number)}
             className="shrink-0 rounded-md px-3 py-1 text-sm border border-gray-300"
           >
             복사
@@ -367,26 +466,49 @@ function AccountList({
   );
 }
 
-/** 앨범 01,02,... 확장자 자동 시도(.jpg/.JPG/.png/.jpeg/.webp) */
-function AlbumImage({ num }: { num: number }) {
-  const [extIndex, setExtIndex] = useState(0);
-  const [hidden, setHidden] = useState(false);
-  const padded = String(num).padStart(2, "0");
-  const exts = ["jpg", "JPG", "png", "jpeg", "webp"];
-  const src = `/images/album/${padded}.${exts[extIndex]}`;
-  if (hidden) return null;
+/* 앨범 한 칸: 이름을 그대로 사용. 폴백 시 01..+확장자 자동 시도 */
+function AlbumImage({ name }: { name: string }) {
+  // name이 완전 경로가 아니면 /images/album/를 붙여준다.
+  const url = name.startsWith("/") ? name : `/images/album/${name}`;
+  const [src, setSrc] = useState(url);
+  const [fallbackTried, setFallbackTried] = useState(false);
+
+  // 폴백: index.json이 없을 때 candidates 형태로 넘어오면 확장자 자동 시도
+  useEffect(() => {
+    if (/\.(png|jpg|jpeg|webp|JPG)$/i.test(name)) return;
+    if (!fallbackTried) {
+      setFallbackTried(true);
+    }
+  }, [name, fallbackTried]);
+
+  const onError = () => {
+    // 폴백 후보("01.jpg","01.JPG",...) 같은 경우 다음 후보로 넘어가게끔
+    const match = src.match(/^(.*?)(\d{2})(?:\.(\w+))?$/);
+    if (!match) {
+      // 일반 파일인데 실패하면 숨김
+      setSrc("");
+      return;
+    }
+    const base = match[1];
+    const id = match[2];
+    const currentExt = match[3];
+    const order = ["jpg", "JPG", "png", "jpeg", "webp"];
+    const idx = order.indexOf(currentExt || "");
+    const next = order[idx + 1];
+    if (next) setSrc(`${base}${id}.${next}`);
+    else setSrc("");
+  };
+
+  if (!src) return null;
 
   return (
     <figure className="rounded-xl overflow-hidden bg-gray-100">
       <img
         src={src}
-        alt={`album-${padded}`}
+        alt="album"
         loading="lazy"
         className="w-full h-full object-cover aspect-[4/3]"
-        onError={() => {
-          if (extIndex < exts.length - 1) setExtIndex(extIndex + 1);
-          else setHidden(true);
-        }}
+        onError={onError}
       />
     </figure>
   );
