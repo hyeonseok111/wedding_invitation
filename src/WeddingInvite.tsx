@@ -120,8 +120,12 @@ export default function WeddingInvite() {
         onClick={toggleBgm}
         aria-label={isPlaying ? "배경음악 일시정지" : "배경음악 재생"}
         title={isPlaying ? "배경음악 일시정지" : "배경음악 재생"}
-        className="fixed left-3 top-3 z-20 w-11 h-11 rounded-full bg-white/95 backdrop-blur shadow flex items-center justify-center"
+        aria-pressed={isPlaying}
+        className={`fixed left-3 top-3 z-20 w-11 h-11 rounded-full bg-white/95 backdrop-blur shadow flex items-center justify-center border
+          ${isPlaying ? "border-rose-200 ring-2 ring-rose-100" : "border-gray-200"}`}
+        style={{ color: isPlaying ? HIGHLIGHT : "#6b7280" /* gray-500 */ }}
       >
+        {/* 재생 중: 파장 애니메이션, 정지: 담백한 음표(슬래시 없음) */}
         <NoteIcon muted={!isPlaying} width={22} height={22} />
       </button>
       <audio ref={audioRef} src={BGM_SRC} preload="none" loop className="hidden" />
@@ -219,7 +223,7 @@ export default function WeddingInvite() {
           <h2 className="text-xl font-semibold mb-4" style={{ color: HIGHLIGHT }}>
             오시는 길
           </h2>
-        <p className="text-lg font-bold">{VENUE_NAME}</p>
+          <p className="text-lg font-bold">{VENUE_NAME}</p>
           <p className="mt-1 text-gray-700">{VENUE_ADDR}</p>
           <p className="mt-0.5 text-gray-700">{VENUE_TEL}</p>
 
@@ -270,21 +274,42 @@ export default function WeddingInvite() {
 
 /* ───────── 하위 컴포넌트 ───────── */
 
+/** 깔끔한 음표: 정지 시 노트만, 재생 중엔 작은 파장 애니메이션 */
 function NoteIcon({
   muted = false,
   ...props
 }: { muted?: boolean } & React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      {/* 음표 */}
+      {/* note 본체 */}
       <path
-        d="M12 3v10.5a3.5 3.5 0 1 1-2-3.2V6l8-2v7.5a3.5 3.5 0 1 1-2-3.2V4.2l-4 1"
-        strokeWidth="1.7"
+        d="M15 3v10.2a4 4 0 1 1-2-3.464V6.5l7-2V11.7a4 4 0 1 1-2-3.464V3.8L15 5V3z"
+        strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
+        fill="none"
       />
-      {/* 정지일 때만 대각선 */}
-      {muted && <path d="M4 20L20 4" strokeWidth="2" strokeLinecap="round" />}
+      {/* 재생 중일 때만 파장 표시 (슬래시 없음) */}
+      {!muted && (
+        <>
+          <path
+            d="M6 10c1.5-1.2 3.5-1.2 5 0"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+            className="opacity-70"
+          >
+            <animate attributeName="opacity" values="0.2;1;0.2" dur="1.8s" repeatCount="indefinite" />
+          </path>
+          <path
+            d="M4.5 8.8c2.2-2 5.3-2 7.5 0"
+            strokeWidth="1.1"
+            strokeLinecap="round"
+            className="opacity-50"
+          >
+            <animate attributeName="opacity" values="0.15;0.8;0.15" dur="1.8s" begin="0.3s" repeatCount="indefinite" />
+          </path>
+        </>
+      )}
     </svg>
   );
 }
