@@ -1,2 +1,2 @@
 # wedding_invitation
-모바일 청첩장
+셀프 모바일 청첩장
