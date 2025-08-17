@@ -9,7 +9,7 @@ const VENUE_NAME = "아펠가모 공덕 라로브홀";
 const VENUE_ADDR = "서울 마포구 마포대로 92 효성해링턴스퀘어 B동 7층";
 const VENUE_TEL = "02-2197-0230";
 
-const NAVER_VIEW_URL = "https://naver.me/x8DEFv5E"; // 자세히 보기
+const NAVER_VIEW_URL = "https://naver.me/Gj7ZwO7U"; // 자세히 보기
 // 페이지 내 미리보기(퍼가기 src 권장; 임시 entry URL)
 const NAVER_EMBED_SRC =
   "https://map.naver.com/p/entry/place/1929913788?c=15.00,0,0,0,dh";
@@ -287,10 +287,8 @@ export default function WeddingInvite() {
               label="네이버 지도"
               onClick={() =>
                 openWithFallback(
-                  `nmap://search?query=${encodeURIComponent(VENUE_NAME + " " + VENUE_ADDR)}`,
-                  `https://map.naver.com/v5/search/${encodeURIComponent(
-                    VENUE_NAME + " " + VENUE_ADDR
-                  )}`
+                  `nmap://search?query=${encodeURIComponent(VENUE_NAME)}`,
+                  `https://map.naver.com/v5/search/${encodeURIComponent(VENUE_NAME)}`
                 )
               }
             >
@@ -301,8 +299,8 @@ export default function WeddingInvite() {
               label="카카오 내비"
               onClick={() =>
                 openWithFallback(
-                  `kakaomap://search?q=${encodeURIComponent(VENUE_NAME + " " + VENUE_ADDR)}`,
-                  `https://map.kakao.com/?q=${encodeURIComponent(VENUE_NAME + " " + VENUE_ADDR)}`
+                  `kakaomap://search?q=${encodeURIComponent(VENUE_NAME)}`,
+                  `https://map.kakao.com/?q=${encodeURIComponent(VENUE_NAME)}`
                 )
               }
             >
@@ -315,9 +313,7 @@ export default function WeddingInvite() {
                 openWithFallback(
                   `tmap://search?name=${encodeURIComponent(VENUE_NAME)}`,
                   // 티맵 전용 웹이 없어 폴백은 구글맵 검색
-                  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                    VENUE_NAME + " " + VENUE_ADDR
-                  )}`
+                  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(VENUE_NAME)}`
                 )
               }
             >
