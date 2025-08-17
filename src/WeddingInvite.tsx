@@ -33,8 +33,8 @@ const BRIDE_ACCOUNTS = [
 
 /** index.json 타입 */
 type AlbumIndex = {
-  main: string;     // 메인 이미지 파일명
-  album: string[];  // 앨범 파일명 리스트
+  main: string; // 메인 이미지 파일명
+  album: string[]; // 앨범 파일명 리스트
 };
 
 export default function WeddingInvite() {
@@ -45,8 +45,14 @@ export default function WeddingInvite() {
     const a = audioRef.current;
     if (!a) return;
     if (a.paused) {
-      try { await a.play(); setIsPlaying(true); } catch {}
-    } else { a.pause(); setIsPlaying(false); }
+      try {
+        await a.play();
+        setIsPlaying(true);
+      } catch {}
+    } else {
+      a.pause();
+      setIsPlaying(false);
+    }
   };
 
   /** ── D-day ── */
@@ -78,11 +84,13 @@ export default function WeddingInvite() {
     let canceled = false;
     const load = async () => {
       try {
-        const res = await fetch("/images/album/index.json", { cache: "no-store" });
+        const res = await fetch("/images/album/index.json", {
+          cache: "no-store",
+        });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as AlbumIndex;
 
-        // 이름 내림차순 정렬 + 중복 제거(같은 이름이 중복된 경우만 제거)
+        // 이름 내림차순 정렬 + 중복 제거
         const sortedUnique = Array.from(
           new Set(
             [...data.album]
@@ -92,7 +100,7 @@ export default function WeddingInvite() {
           )
         ).sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
 
-        // ❗main도 앨범에 표시되게 유지 (더 이상 제외하지 않음)
+        // main도 앨범에 표시되게 유지
         if (!canceled) {
           setAlbumIndex({ main: data.main, album: sortedUnique });
           setAlbumError(null);
@@ -105,14 +113,21 @@ export default function WeddingInvite() {
       }
     };
     load();
-    return () => { canceled = true; };
+    return () => {
+      canceled = true;
+    };
   }, []);
 
-  const MAIN_IMG = albumIndex ? `/images/album/${albumIndex.main}` : "/images/album/Bloom_25_06_13_073904.JPG";
+  const MAIN_IMG = albumIndex
+    ? `/images/album/${albumIndex.main}`
+    : "/images/album/Bloom_25_06_13_073904.JPG";
 
   /** ── 복사 ── */
   const copy = async (txt: string) => {
-    try { await navigator.clipboard.writeText(txt); alert(`복사되었습니다: ${txt}`); } catch {}
+    try {
+      await navigator.clipboard.writeText(txt);
+      alert(`복사되었습니다: ${txt}`);
+    } catch {}
   };
 
   return (
@@ -207,7 +222,6 @@ export default function WeddingInvite() {
                   loading="lazy"
                   className="w-full h-full object-cover aspect-[4/3]"
                   onError={(e) => {
-                    // 디버깅에 도움 (Netlify에서 경로/대소문자 이슈가 있을 때 확인)
                     (e.target as HTMLImageElement).style.display = "none";
                     console.warn("이미지 로드 실패:", `/images/album/${file}`);
                   }}
@@ -222,16 +236,28 @@ export default function WeddingInvite() {
         </div>
       </section>
 
-      {/* 오시는 길 */}
+      {/* ───────── 오시는 길 (신규 UI) ───────── */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <div className="bg-white rounded-2xl shadow p-6 text-center">
-          <h2 className="text-xl font-semibold mb-4" style={{ color: HIGHLIGHT }}>
+          {/* 상단 타이틀/주소 */}
+          <h2 className="text-xl font-semibold mb-2" style={{ color: HIGHLIGHT }}>
             오시는 길
           </h2>
           <p className="text-lg font-bold">{VENUE_NAME}</p>
           <p className="mt-1 text-gray-700">{VENUE_ADDR}</p>
-          <p className="mt-0.5 text-gray-700">{VENUE_TEL}</p>
 
+          {/* 안내 전화 버튼 */}
+          <div className="mt-3">
+            <a
+              href={`tel:${VENUE_TEL.replace(/[^0-9]/g, "")}`}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm"
+            >
+              <PhoneIcon width={16} height={16} />
+              안내 전화
+            </a>
+          </div>
+
+          {/* 지도 미리보기 */}
           <div className="mt-5 rounded-xl overflow-hidden shadow-sm">
             <iframe
               title="네이버 지도"
@@ -244,6 +270,7 @@ export default function WeddingInvite() {
             />
           </div>
 
+          {/* 자세히 보기 (네이버) */}
           <a
             href={NAVER_VIEW_URL}
             target="_blank"
@@ -253,6 +280,50 @@ export default function WeddingInvite() {
           >
             지도를 자세히 보려면 여기를 눌러주세요
           </a>
+
+          {/* 하단 앱 버튼 3종 */}
+          <div className="mt-5 grid grid-cols-3 gap-3">
+            <AppButton
+              label="네이버 지도"
+              onClick={() =>
+                openWithFallback(
+                  `nmap://search?query=${encodeURIComponent(VENUE_NAME + " " + VENUE_ADDR)}`,
+                  `https://map.naver.com/v5/search/${encodeURIComponent(
+                    VENUE_NAME + " " + VENUE_ADDR
+                  )}`
+                )
+              }
+            >
+              <NaverIcon className="w-5 h-5" />
+            </AppButton>
+
+            <AppButton
+              label="카카오 내비"
+              onClick={() =>
+                openWithFallback(
+                  `kakaomap://search?q=${encodeURIComponent(VENUE_NAME + " " + VENUE_ADDR)}`,
+                  `https://map.kakao.com/?q=${encodeURIComponent(VENUE_NAME + " " + VENUE_ADDR)}`
+                )
+              }
+            >
+              <KakaoIcon className="w-5 h-5" />
+            </AppButton>
+
+            <AppButton
+              label="티맵"
+              onClick={() =>
+                openWithFallback(
+                  `tmap://search?name=${encodeURIComponent(VENUE_NAME)}`,
+                  // 티맵 전용 웹이 없어 폴백은 구글맵 검색
+                  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    VENUE_NAME + " " + VENUE_ADDR
+                  )}`
+                )
+              }
+            >
+              <TmapIcon className="w-5 h-5" />
+            </AppButton>
+          </div>
         </div>
       </section>
 
@@ -283,9 +354,9 @@ export default function WeddingInvite() {
 function Headphones(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path d="M4 13a8 8 0 1 1 16 0" strokeWidth="1.6" strokeLinecap="round"/>
-      <rect x="3" y="12" width="4" height="7" rx="1.2" strokeWidth="1.6"/>
-      <rect x="17" y="12" width="4" height="7" rx="1.2" strokeWidth="1.6"/>
+      <path d="M4 13a8 8 0 1 1 16 0" strokeWidth="1.6" strokeLinecap="round" />
+      <rect x="3" y="12" width="4" height="7" rx="1.2" strokeWidth="1.6" />
+      <rect x="17" y="12" width="4" height="7" rx="1.2" strokeWidth="1.6" />
     </svg>
   );
 }
@@ -474,5 +545,76 @@ function AccountList({
         </li>
       ))}
     </ul>
+  );
+}
+
+/* ───────── 오시는 길 하단 버튼/아이콘/폴백 로직 ───────── */
+
+/** 앱 스킴 시도 → 실패 시 웹으로 폴백 */
+function openWithFallback(appUrl: string, webUrl: string) {
+  const start = Date.now();
+  const t = setTimeout(() => {
+    if (Date.now() - start < 1500) window.location.href = webUrl;
+  }, 800);
+
+  const iframe = document.createElement("iframe");
+  iframe.style.display = "none";
+  iframe.src = appUrl;
+  document.body.appendChild(iframe);
+
+  setTimeout(() => {
+    clearTimeout(t);
+    if (document.body.contains(iframe)) document.body.removeChild(iframe);
+  }, 2500);
+}
+
+/** 하단 앱 버튼 공통 */
+function AppButton({
+  label,
+  children,
+  onClick,
+}: {
+  label: string;
+  children: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full h-12 rounded-xl bg-white border border-gray-200 shadow-sm flex items-center justify-center gap-2 text-sm"
+    >
+      {children}
+      <span className="font-medium">{label}</span>
+    </button>
+  );
+}
+
+/** 간단 로고 아이콘들 */
+function NaverIcon(props: React.HTMLAttributes<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+      <rect width="24" height="24" rx="4" />
+      <path d="M9 6h3.2l2.9 4.7V6H18v12h-3.2l-2.9-4.7V18H9V6z" fill="#fff" />
+    </svg>
+  );
+}
+function KakaoIcon(props: React.HTMLAttributes<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" {...props}>
+      <rect width="24" height="24" rx="4" fill="#FFE812" />
+      <path
+        d="M12 6.5c-3.3 0-6 2-6 4.6 0 1.7 1.1 3.2 2.9 4l-.6 2.4a.5.5 0 0 0 .8.5l2.7-1.7c.07 0 .27.1.2.1 3.3 0 6-2.1 6-4.7S15.3 6.5 12 6.5z"
+        fill="#381E1F"
+      />
+    </svg>
+  );
+}
+function TmapIcon(props: React.HTMLAttributes<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" {...props}>
+      <rect width="24" height="24" rx="4" fill="#E31E2D" />
+      <path d="M7 12a5 5 0 0 1 10 0c0 2.8-2.7 5.5-5 7.5-2.3-2-5-4.7-5-7.5z" fill="#fff" />
+      <circle cx="12" cy="12" r="2.2" fill="#E31E2D" />
+    </svg>
   );
 }
