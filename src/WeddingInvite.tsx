@@ -82,17 +82,19 @@ export default function WeddingInvite() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as AlbumIndex;
 
-        // 이름 내림차순 정렬 + main과 중복 제거
-        const sorted = [...data.album]
-          .filter((f) => f && typeof f === "string")
-          .map((f) => f.trim())
-          .filter(Boolean)
-          .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+        // 이름 내림차순 정렬 + 중복 제거(같은 이름이 중복된 경우만 제거)
+        const sortedUnique = Array.from(
+          new Set(
+            [...data.album]
+              .filter((f) => f && typeof f === "string")
+              .map((f) => f.trim())
+              .filter(Boolean)
+          )
+        ).sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
 
-        const deduped = sorted.filter((f) => f !== data.main);
-
+        // ❗main도 앨범에 표시되게 유지 (더 이상 제외하지 않음)
         if (!canceled) {
-          setAlbumIndex({ main: data.main, album: deduped });
+          setAlbumIndex({ main: data.main, album: sortedUnique });
           setAlbumError(null);
         }
       } catch (e: any) {
@@ -123,10 +125,9 @@ export default function WeddingInvite() {
         aria-pressed={isPlaying}
         className={`fixed left-3 top-3 z-20 w-11 h-11 rounded-full bg-white/95 backdrop-blur shadow flex items-center justify-center border
           ${isPlaying ? "border-rose-200 ring-2 ring-rose-100" : "border-gray-200"}`}
-        style={{ color: isPlaying ? HIGHLIGHT : "#6b7280" /* gray-500 */ }}
+        style={{ color: isPlaying ? HIGHLIGHT : "#6b7280" }}
       >
-        {/* 재생 중: 파장 애니메이션, 정지: 담백한 음표(슬래시 없음) */}
-        <NoteIcon muted={!isPlaying} width={22} height={22} />
+        <Headphones width={22} height={22} />
       </button>
       <audio ref={audioRef} src={BGM_SRC} preload="none" loop className="hidden" />
 
@@ -205,7 +206,11 @@ export default function WeddingInvite() {
                   alt={`album-${idx}`}
                   loading="lazy"
                   className="w-full h-full object-cover aspect-[4/3]"
-                  onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+                  onError={(e) => {
+                    // 디버깅에 도움 (Netlify에서 경로/대소문자 이슈가 있을 때 확인)
+                    (e.target as HTMLImageElement).style.display = "none";
+                    console.warn("이미지 로드 실패:", `/images/album/${file}`);
+                  }}
                 />
               </figure>
             ))}
@@ -274,42 +279,13 @@ export default function WeddingInvite() {
 
 /* ───────── 하위 컴포넌트 ───────── */
 
-/** 깔끔한 음표: 정지 시 노트만, 재생 중엔 작은 파장 애니메이션 */
-function NoteIcon({
-  muted = false,
-  ...props
-}: { muted?: boolean } & React.SVGProps<SVGSVGElement>) {
+/** 헤드폰 아이콘 */
+function Headphones(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      {/* note 본체 */}
-      <path
-        d="M15 3v10.2a4 4 0 1 1-2-3.464V6.5l7-2V11.7a4 4 0 1 1-2-3.464V3.8L15 5V3z"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      {/* 재생 중일 때만 파장 표시 (슬래시 없음) */}
-      {!muted && (
-        <>
-          <path
-            d="M6 10c1.5-1.2 3.5-1.2 5 0"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-            className="opacity-70"
-          >
-            <animate attributeName="opacity" values="0.2;1;0.2" dur="1.8s" repeatCount="indefinite" />
-          </path>
-          <path
-            d="M4.5 8.8c2.2-2 5.3-2 7.5 0"
-            strokeWidth="1.1"
-            strokeLinecap="round"
-            className="opacity-50"
-          >
-            <animate attributeName="opacity" values="0.15;0.8;0.15" dur="1.8s" begin="0.3s" repeatCount="indefinite" />
-          </path>
-        </>
-      )}
+      <path d="M4 13a8 8 0 1 1 16 0" strokeWidth="1.6" strokeLinecap="round"/>
+      <rect x="3" y="12" width="4" height="7" rx="1.2" strokeWidth="1.6"/>
+      <rect x="17" y="12" width="4" height="7" rx="1.2" strokeWidth="1.6"/>
     </svg>
   );
 }
