@@ -2,19 +2,22 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+    />
     <title>이현석 & 유지현 결혼합니다</title>
-
-    <!-- ✅ 카카오 '지도 퍼가기(roughmap)' 로더: 반드시 딱 1번만 -->
+    <!-- Tailwind/Vite 번들에서 필요한 폰트/스타일은 src/index.css로 -->
+    <!-- ✅ 카카오 '지도 퍼가기' 로더: 반드시 한 번만! -->
     <script
       charset="UTF-8"
       class="daum_roughmap_loader_script"
-      src="https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js">
-    </script>
+      src="https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js"
+    ></script>
   </head>
   <body>
     <div id="root"></div>
-    <!-- Vite entry -->
+    <!-- Vite 엔트리 -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
