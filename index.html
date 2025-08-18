@@ -2,42 +2,30 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
-
-    <!-- 브라우저 상단 색상 / 라이트 모드 고정 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#D67878" />
     <meta name="color-scheme" content="light only" />
 
     <title>이현석 · 유지현 모바일 청첩장</title>
     <meta name="description" content="2025년 12월 7일(일) 15:30 · 아펠가모 공덕 라로브홀" />
 
-    <!-- Favicons (원하면 경로만 맞춰두세요) -->
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-    <!-- Fonts: 제목 Noto Serif KR / 본문 Pretendard -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/pretendard/dist/web/static/pretendard.css"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard/dist/web/static/pretendard.css" />
 
-    <!-- (선택) BGM 미리 힌트 -->
+    <!-- (선택) BGM 프리로드 -->
     <link rel="preload" href="/bgm/romantic-melody.mp3" as="audio" />
-
-    <!-- Vite 엔트리 -->
-    <script type="module" src="/src/main.tsx"></script>
   </head>
   <body class="bg-[#FFF7F1] text-gray-900">
-    <div id="root"></div>
+    <div id="root">로딩중…</div>
+
+    <!-- Vite entry: 상대 경로로 두고 body 끝에 배치 -->
+    <script type="module" src="src/main.tsx"></script>
   </body>
 </html>
