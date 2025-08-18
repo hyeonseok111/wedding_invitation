@@ -12,7 +12,7 @@ const VENUE_TEL = "02-2197-0230";
 /** 하단 앱 버튼 검색어(라로브홀 제외) */
 const VENUE_SEARCH = "아펠가모 공덕";
 
-/** ▼ 카카오 “지도 퍼가기(roughmap)”에서 복사한 최신 값(네가 준 것) */
+/** ▼ 카카오 퍼가기 값(네가 준 값) */
 const KAKAO_ROUGHMAP_TIMESTAMP = "1755526725995";
 const KAKAO_ROUGHMAP_KEY = "78iir7azr4f";
 const KAKAO_MAP_HEIGHT = 360;
@@ -20,7 +20,7 @@ const KAKAO_MAP_HEIGHT = 360;
 /** 앨범 인덱스 타입 */
 type AlbumIndex = { main: string; album: string[] };
 
-/* ====================== 카카오 roughmap (퍼가기) 컴포넌트 ====================== */
+/* ====================== 카카오 roughmap 컴포넌트 ====================== */
 function KakaoRoughMap({
   timestamp,
   mapKey,
@@ -35,10 +35,21 @@ function KakaoRoughMap({
   const containerId = `daumRoughmapContainer${timestamp}`;
 
   useEffect(() => {
-    const LOADER_CLASS = "daum_roughmap_loader_script";
+    let disposed = false;
 
-    // 1) 컨테이너 DOM 존재 보장
-    const ensureContainer = () =>
+    const waitForDaum = () =>
+      new Promise<void>((resolve) => {
+        const ok = () => (window as any).daum?.roughmap?.Lander;
+        if (ok()) return resolve();
+        const iv = setInterval(() => {
+          if (ok()) {
+            clearInterval(iv);
+            resolve();
+          }
+        }, 50);
+      });
+
+    const waitForContainer = () =>
       new Promise<void>((resolve) => {
         const tick = () => {
           const el = document.getElementById(containerId);
@@ -48,36 +59,15 @@ function KakaoRoughMap({
         tick();
       });
 
-    // 2) roughmap 로더 스크립트 로딩 보장
-    const ensureLoader = () =>
-      new Promise<void>((resolve) => {
-        if ((window as any).daum?.roughmap?.Lander) return resolve();
-
-        const existed = document.querySelector(`script.${LOADER_CLASS}`);
-        if (existed) {
-          const iv = setInterval(() => {
-            if ((window as any).daum?.roughmap?.Lander) {
-              clearInterval(iv);
-              resolve();
-            }
-          }, 50);
-          return;
-        }
-
-        const s = document.createElement("script");
-        s.src = "https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js";
-        s.charset = "UTF-8";
-        s.className = LOADER_CLASS;
-        s.onload = () => resolve();
-        document.body.appendChild(s);
-      });
-
-    let disposed = false;
-
     (async () => {
-      await ensureContainer();
-      await ensureLoader();
+      await waitForContainer();
+      await waitForDaum();
       if (disposed) return;
+
+      // 이미 랜더된 경우 중복 방지: 컨테이너 비우기
+      const root = document.getElementById(containerId);
+      if (!root) return;
+      root.innerHTML = "";
 
       const lander = new (window as any).daum.roughmap.Lander({
         timestamp,
@@ -87,11 +77,8 @@ function KakaoRoughMap({
       });
       lander.render();
 
-      // 핀치/드래그 제스처 보정
-      const root = document.getElementById(containerId);
-      if (!root) return;
+      // 핀치/드래그 제스처 허용
       root.style.touchAction = "auto";
-
       const observer = new MutationObserver(() => {
         const iframe = root.querySelector("iframe") as HTMLIFrameElement | null;
         if (iframe) {
@@ -100,7 +87,6 @@ function KakaoRoughMap({
         }
       });
       observer.observe(root, { childList: true, subtree: true });
-
       return () => observer.disconnect();
     })();
 
@@ -123,7 +109,7 @@ function KakaoRoughMap({
     />
   );
 }
-/* ============================================================================ */
+/* ===================================================================== */
 
 export default function WeddingInvite() {
   /** ── BGM ── */
@@ -155,9 +141,8 @@ export default function WeddingInvite() {
         const res = await fetch("/images/album/index.json", { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as AlbumIndex;
-        const sorted = Array.from(
-          new Set(data.album.filter(Boolean).map((f) => String(f).trim()))
-        ).sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+        const sorted = Array.from(new Set(data.album.filter(Boolean).map((f) => String(f).trim())))
+          .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
         if (!canceled) { setAlbumIndex({ main: data.main, album: sorted }); setAlbumError(null); }
       } catch {
         if (!canceled) { setAlbumIndex(null); setAlbumError("앨범 목록(index.json)을 불러오지 못했습니다."); }
@@ -281,7 +266,7 @@ export default function WeddingInvite() {
             </a>
           </div>
 
-          {/* ✅ 실제 카카오 지도(퍼가기, 핀치줌/드래그 가능) */}
+          {/* ✅ 실제 카카오 지도(핀치줌/드래그 가능) */}
           <div className="mt-5 rounded-xl overflow-hidden shadow-sm">
             <KakaoRoughMap
               timestamp={KAKAO_ROUGHMAP_TIMESTAMP}
@@ -368,7 +353,6 @@ export default function WeddingInvite() {
 }
 
 /* ───────── 하위 컴포넌트 ───────── */
-
 function Headphones(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
