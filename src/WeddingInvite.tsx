@@ -72,23 +72,29 @@ export default function WeddingInvite() {
   };
 
   /** ── 날짜 파생 ── */
-  const eventDate = new Date(WEDDING_ISO);
+  const eventDate = useMemo(() => new Date(WEDDING_ISO), []);
   const mm = pad2(eventDate.getMonth() + 1);
   const dd = pad2(eventDate.getDate());
 
   /** ── D-day (자정 자동 갱신) ── */
   const [dDay, setDDay] = useState(() => daysUntil(WEDDING_ISO));
   useEffect(() => {
+    const update = () => setDDay(daysUntil(WEDDING_ISO));
     const now = new Date();
     const nextMidnight = new Date(now);
     nextMidnight.setHours(24, 0, 0, 0);
     const toMidnight = nextMidnight.getTime() - now.getTime();
-    const t = setTimeout(() => {
-      setDDay(daysUntil(WEDDING_ISO));
-      const i = setInterval(() => setDDay(daysUntil(WEDDING_ISO)), 86400000);
-      return () => clearInterval(i);
+
+    let intervalId: number | undefined;
+    const timeoutId = window.setTimeout(() => {
+      update();
+      intervalId = window.setInterval(update, 86400000);
     }, toMidnight);
-    return () => clearTimeout(t);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      if (intervalId) window.clearInterval(intervalId);
+    };
   }, []);
 
   /** ── 2025-12 달력 ── */
@@ -153,17 +159,11 @@ export default function WeddingInvite() {
 
   /** ── 렌더 ── */
   return (
-    <main
-      className="min-h-screen font-sans"
-      style={{ background: THEME.bg, color: THEME.ink }}
-    >
+    <main className="min-h-screen font-sans" style={{ background: THEME.bg, color: THEME.ink }}>
       {/* 상단 그라데이션 */}
       <div
         className="fixed inset-x-0 top-0 h-28 pointer-events-none -z-0"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(214,120,120,0.12), rgba(214,120,120,0))",
-        }}
+        style={{ background: "linear-gradient(180deg, rgba(214,120,120,0.12), rgba(214,120,120,0))" }}
       />
 
       {/* BGM 토글 버튼 (회색 원형 + 흰색 아이콘) */}
@@ -183,58 +183,30 @@ export default function WeddingInvite() {
         <div className="flex items-end justify-between">
           <h1
             className="tracking-[0.2em]"
-            style={{
-              fontFamily: "'Noto Serif KR', ui-serif, serif",
-              fontSize: "clamp(24px, 5.5vw, 36px)",
-              fontWeight: 500,
-            }}
+            style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(24px, 5.5vw, 36px)", fontWeight: 500 }}
           >
             이&nbsp;현&nbsp;석
           </h1>
 
           <div className="text-center mx-3 select-none">
-            <div
-              className="leading-none"
-              style={{
-                fontFamily: "'Noto Serif KR', ui-serif, serif",
-                fontSize: "clamp(44px, 12vw, 88px)",
-                letterSpacing: "0.02em",
-              }}
-            >
+            <div className="leading-none" style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(44px, 12vw, 88px)", letterSpacing: "0.02em" }}>
               {mm}
             </div>
-            <div
-              className="w-10 mx-auto my-1 border-t"
-              style={{ borderColor: "#DADADA" }}
-            />
-            <div
-              className="leading-none"
-              style={{
-                fontFamily: "'Noto Serif KR', ui-serif, serif",
-                fontSize: "clamp(44px, 12vw, 88px)",
-                letterSpacing: "0.02em",
-              }}
-            >
+            <div className="w-10 mx-auto my-1 border-t" style={{ borderColor: "#DADADA" }} />
+            <div className="leading-none" style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(44px, 12vw, 88px)", letterSpacing: "0.02em" }}>
               {dd}
             </div>
           </div>
 
           <h1
             className="tracking-[0.2em] text-right"
-            style={{
-              fontFamily: "'Noto Serif KR', ui-serif, serif",
-              fontSize: "clamp(24px, 5.5vw, 36px)",
-              fontWeight: 500,
-            }}
+            style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(24px, 5.5vw, 36px)", fontWeight: 500 }}
           >
             유&nbsp;지&nbsp;현
           </h1>
         </div>
 
-        <p
-          className="mt-3 text-center text-gray-600"
-          style={{ fontSize: "clamp(12px, 2.8vw, 14px)" }}
-        >
+        <p className="mt-3 text-center text-gray-600" style={{ fontSize: "clamp(12px, 2.8vw, 14px)" }}>
           2025년 12월 7일 일요일 15:30 · {VENUE_NAME}
         </p>
       </section>
@@ -242,12 +214,7 @@ export default function WeddingInvite() {
       {/* 메인 이미지 */}
       <section className="max-w-md mx-auto px-5">
         <figure className="rounded-[28px] overflow-hidden shadow-lg bg-white">
-          <img
-            src={MAIN_IMG}
-            alt="메인 웨딩 사진"
-            className="w-full h-[60svh] object-cover"
-            loading="lazy"
-          />
+          <img src={MAIN_IMG} alt="메인 웨딩 사진" className="w-full h-[60svh] object-cover" loading="lazy" />
         </figure>
       </section>
 
@@ -256,11 +223,7 @@ export default function WeddingInvite() {
         <Card className="text-center p-8">
           <p
             className="text-gray-800"
-            style={{
-              fontFamily: "'Noto Serif KR', ui-serif, serif",
-              fontSize: "clamp(18px, 4.2vw, 24px)",
-              lineHeight: 1.9,
-            }}
+            style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(18px, 4.2vw, 24px)", lineHeight: 1.9 }}
           >
             장담하건대, 세상이 다 겨울이어도<br />
             우리 사랑은 늘봄처럼 따뜻하고<br />
@@ -276,23 +239,17 @@ export default function WeddingInvite() {
       {/* 초대 문구 */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <div className="rounded-[28px] shadow p-8 text-center bg-white">
-          <h3
-            className="tracking-[0.35em] text-gray-500"
-            style={{ fontSize: "clamp(12px, 2.8vw, 14px)" }}
-          >
+          <h3 className="tracking-[0.35em] text-gray-500" style={{ fontSize: "clamp(12px, 2.8vw, 14px)" }}>
             INVITATION
           </h3>
-      
-          <div
-            className="mt-5 text-gray-900"
-            style={{ fontSize: "clamp(17px, 3.9vw, 22px)", lineHeight: 1.9 }}
-          >
+
+          <div className="mt-5 text-gray-900" style={{ fontSize: "clamp(17px, 3.9vw, 22px)", lineHeight: 1.9 }}>
             <p>사랑이 봄처럼 시작되어</p>
             <p className="mt-2">겨울의 약속으로 이어집니다.</p>
             <p className="mt-2">하루하루의 마음이 저희의 계절을 만들었으니</p>
             <p className="mt-2">함께 오셔서 따뜻히 축복해 주시면 감사하겠습니다.</p>
           </div>
-      
+
           <div className="mt-6 text-[13px] text-gray-600">
             2025년 12월 7일 일요일 오후 3시 30분 · 아펠가모 공덕 라로브홀
           </div>
@@ -309,32 +266,19 @@ export default function WeddingInvite() {
       </section>
 
       {/* 달력 + D-day */}
-      <CalendarCard
-        days={days}
-        cells={dec2025Cells}
-        highlight={THEME.hl}
-        dDay={dDay}
-      />
+      <CalendarCard days={days} cells={dec2025Cells} highlight={THEME.hl} dDay={dDay} />
 
       {/* 앨범 */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <Card>
-          <h3
-            className="text-center font-semibold mb-3"
-            style={{ color: THEME.hl, fontSize: "clamp(16px,4.5vw,18px)" }}
-          >
+          <h3 className="text-center font-semibold mb-3" style={{ color: THEME.hl, fontSize: "clamp(16px,4.5vw,18px)" }}>
             ALBUM
           </h3>
-          {albumError && (
-            <p className="text-sm text-red-500 text-center mb-3">{albumError}</p>
-          )}
+          {albumError && <p className="text-sm text-red-500 text-center mb-3">{albumError}</p>}
 
           <div className="grid grid-cols-3 gap-3">
             {albumIndex?.album.map((file, idx) => (
-              <figure
-                key={`${file}-${idx}`}
-                className="rounded-xl overflow-hidden bg-gray-100"
-              >
+              <figure key={`${file}-${idx}`} className="rounded-xl overflow-hidden bg-gray-100">
                 <img
                   src={`/images/album/${file}`}
                   alt={`album-${idx}`}
@@ -350,8 +294,7 @@ export default function WeddingInvite() {
           </div>
 
           <p className="text-[11px] text-gray-500 text-center mt-3">
-            기준 경로 <code>/public/images/album/</code> ·{" "}
-            <code>index.json</code> 파일명 내림차순 정렬
+            기준 경로 <code>/public/images/album/</code> · <code>index.json</code> 파일명 내림차순 정렬
           </p>
         </Card>
       </section>
@@ -359,10 +302,7 @@ export default function WeddingInvite() {
       {/* 오시는 길 */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <Card className="text-center">
-          <h2
-            className="font-semibold mb-1.5"
-            style={{ color: THEME.hl, fontSize: "clamp(16px,4.5vw,18px)" }}
-          >
+          <h2 className="font-semibold mb-1.5" style={{ color: THEME.hl, fontSize: "clamp(16px,4.5vw,18px)" }}>
             오시는 길
           </h2>
           <p className="font-bold" style={{ fontSize: "clamp(15px,4vw,16px)" }}>
@@ -376,26 +316,14 @@ export default function WeddingInvite() {
             <a
               href={`tel:${VENUE_TEL.replace(/[^0-9]/g, "")}`}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition border"
-              style={{
-                background: THEME.ink,
-                color: "#fff",
-                borderColor: "transparent",
-              }}
+              style={{ background: THEME.ink, color: "#fff", borderColor: "transparent" }}
             >
               <PhoneIcon width={16} height={16} /> 안내 전화
             </a>
           </div>
 
-          <div
-            className="mt-5 rounded-2xl overflow-hidden shadow-sm border"
-            style={{ borderColor: THEME.line }}
-          >
-            <KakaoRoughMap
-              timestamp={KAKAO_EMBED_TIMESTAMP}
-              mapKey={KAKAO_EMBED_KEY}
-              width="100%"
-              height={360}
-            />
+          <div className="mt-5 rounded-2xl overflow-hidden shadow-sm border" style={{ borderColor: THEME.line }}>
+            <KakaoRoughMap timestamp={KAKAO_EMBED_TIMESTAMP} mapKey={KAKAO_EMBED_KEY} width="100%" height={360} />
           </div>
 
           <div className="mt-5 grid grid-cols-3 gap-3">
@@ -444,10 +372,7 @@ export default function WeddingInvite() {
       {/* 마음 전하는 곳 */}
       <section className="max-w-md mx-auto px-5 mt-6 pb-20">
         <Card>
-          <h2
-            className="text-center font-semibold mb-3"
-            style={{ color: THEME.hl, fontSize: "clamp(16px,4.5vw,18px)" }}
-          >
+          <h2 className="text-center font-semibold mb-3" style={{ color: THEME.hl, fontSize: "clamp(16px,4.5vw,18px)" }}>
             마음을 전하는 곳
           </h2>
           <Accordion title="신랑측 계좌번호">
@@ -456,9 +381,7 @@ export default function WeddingInvite() {
           <Accordion title="신부측 계좌번호">
             <AccountList accounts={BRIDE_ACCOUNTS} onCopy={(v) => copy(v)} />
           </Accordion>
-          <p className="mt-1 text-[11px] text-gray-500">
-            예식장 내 화환 반입이 불가하여 마음만 감사히 받겠습니다.
-          </p>
+          <p className="mt-1 text-[11px] text-gray-500">예식장 내 화환 반입이 불가하여 마음만 감사히 받겠습니다.</p>
         </Card>
       </section>
     </main>
@@ -467,18 +390,9 @@ export default function WeddingInvite() {
 
 /* ───────── 공통 컴포넌트 ───────── */
 
-function Card({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div
-      className={`rounded-[28px] shadow p-6 bg-white ${className}`}
-      style={{ background: THEME.card }}
-    >
+    <div className={`rounded-[28px] shadow p-6 bg-white ${className}`} style={{ background: THEME.card }}>
       {children}
     </div>
   );
@@ -542,12 +456,7 @@ function KakaoRoughMap({
     };
   }, [timestamp, mapKey, width, height]);
 
-  return (
-    <div
-      id={containerId}
-      className="root_daum_roughmap root_daum_roughmap_landing"
-    />
-  );
+  return <div id={containerId} className="root_daum_roughmap root_daum_roughmap_landing" />;
 }
 
 /** 연락행 */
@@ -592,39 +501,27 @@ function CalendarCard({
   highlight: string;
   dDay: number;
 }) {
-  const label =
-    dDay > 0 ? `${dDay}일 전` : dDay === 0 ? "오늘" : `${Math.abs(dDay)}일 지남`;
+  const label = dDay > 0 ? `${dDay}일 전` : dDay === 0 ? "오늘" : `${Math.abs(dDay)}일 지남`;
 
   return (
     <section className="max-w-md mx-auto px-5 mt-6">
       <Card>
-        <h3
-          className="text-center font-medium"
-          style={{ fontSize: "clamp(18px,4.5vw,22px)" }}
-        >
+        <h3 className="text-center font-medium" style={{ fontSize: "clamp(18px,4.5vw,22px)" }}>
           12월
         </h3>
-        <div
-          className="grid grid-cols-7 gap-3 text-center text-gray-600 mt-3"
-          style={{ fontSize: "clamp(12px,3vw,14px)" }}
-        >
+        <div className="grid grid-cols-7 gap-3 text-center text-gray-600 mt-3" style={{ fontSize: "clamp(12px,3vw,14px)" }}>
           {days.map((d) => (
             <div key={d}>{d}</div>
           ))}
         </div>
-        <div
-          className="grid grid-cols-7 gap-3 text-center mt-2"
-          style={{ fontSize: "clamp(16px,4.5vw,20px)" }}
-        >
+        <div className="grid grid-cols-7 gap-3 text-center mt-2" style={{ fontSize: "clamp(16px,4.5vw,20px)" }}>
           {cells.map((n, i) =>
             n === null ? (
               <div key={i} />
             ) : (
               <div
                 key={i}
-                className={`w-10 h-10 mx-auto flex items-center justify-center rounded-full ${
-                  n === 7 ? "text-white font-bold" : "text-gray-800"
-                }`}
+                className={`w-10 h-10 mx-auto flex items-center justify-center rounded-full ${n === 7 ? "text-white font-bold" : "text-gray-800"}`}
                 style={n === 7 ? { backgroundColor: highlight } : {}}
               >
                 {n}
@@ -632,10 +529,7 @@ function CalendarCard({
             )
           )}
         </div>
-        <p
-          className="mt-5 text-center"
-          style={{ color: highlight, fontSize: "clamp(15px,4vw,18px)" }}
-        >
+        <p className="mt-5 text-center" style={{ color: highlight, fontSize: "clamp(15px,4vw,18px)" }}>
           이현석 ❤ 유지현 의 결혼식 {label}
         </p>
       </Card>
@@ -672,21 +566,10 @@ function InfoSections({ highlight }: { highlight: string }) {
     </section>
   );
 }
-function InfoBlock({
-  title,
-  highlight,
-  children,
-}: {
-  title: string;
-  highlight: string;
-  children: React.ReactNode;
-}) {
+function InfoBlock({ title, highlight, children }: { title: string; highlight: string; children: React.ReactNode }) {
   return (
     <div>
-      <h4
-        className="font-semibold mb-1.5"
-        style={{ color: highlight, fontSize: "clamp(15px,4vw,16px)" }}
-      >
+      <h4 className="font-semibold mb-1.5" style={{ color: highlight, fontSize: "clamp(15px,4vw,16px)" }}>
         {title}
       </h4>
       <p className="text-gray-700" style={{ fontSize: "clamp(14px,3.6vw,15px)", lineHeight: 1.8 }}>
@@ -700,14 +583,8 @@ function InfoBlock({
 function Accordion({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
-    <div
-      className="border rounded-2xl bg-white shadow-sm mb-3 overflow-hidden"
-      style={{ borderColor: THEME.line }}
-    >
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left"
-      >
+    <div className="border rounded-2xl bg-white shadow-sm mb-3 overflow-hidden" style={{ borderColor: THEME.line }}>
+      <button onClick={() => setOpen((v) => !v)} className="w-full flex items-center justify-between px-4 py-3 text-left">
         <span className="text-[15px]">{title}</span>
         <span className="text-xl" aria-hidden>
           {open ? "▾" : "▸"}
@@ -727,20 +604,12 @@ function AccountList({
   return (
     <ul className="space-y-3">
       {accounts.map((a, i) => (
-        <li
-          key={i}
-          className="flex items-center justify-between gap-3 pb-3 border-b"
-          style={{ borderColor: THEME.line }}
-        >
+        <li key={i} className="flex items-center justify-between gap-3 pb-3 border-b" style={{ borderColor: THEME.line }}>
           <div className="text-[13.5px]">
             <div className="font-medium">{`${a.bank} ${a.number}`}</div>
             <div className="text-gray-500">{a.holder}</div>
           </div>
-          <button
-            onClick={() => onCopy(a.number)}
-            className="shrink-0 rounded-md px-3 py-1.5 text-[12.5px] border transition"
-            style={{ borderColor: THEME.line }}
-          >
+          <button onClick={() => onCopy(a.number)} className="shrink-0 rounded-md px-3 py-1.5 text-[12.5px] border transition" style={{ borderColor: THEME.line }}>
             복사
           </button>
         </li>
@@ -749,40 +618,43 @@ function AccountList({
   );
 }
 
-/** 아이콘들 */
-/** 스피커 ON (파형) */
-function SpeakerOn(props: React.SVGProps<SVGSVGElement>) {
+/** 앱 버튼 */
+function AppButton({ label, children, onClick }: { label: string; children: React.ReactNode; onClick: () => void }) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-      {/* 스피커 몸체 */}
-      <path d="M11 5.5c0-.6-.7-.9-1.1-.5L6.8 8H4.5A1.5 1.5 0 0 0 3 9.5v5A1.5 1.5 0 0 0 4.5 16H6.8l3.1 3c.4.4 1.1.1 1.1-.5V5.5z"/>
-      {/* 파형 두 줄 */}
-      <path d="M15.5 8.5a1 1 0 0 1 1.4 0 5 5 0 0 1 0 7 1 1 0 1 1-1.4-1.4 3 3 0 0 0 0-4.2 1 1 0 0 1 0-1.4z"/>
-      <path d="M18.2 6.3a1 1 0 0 1 1.4 0 8.5 8.5 0 0 1 0 12 1 1 0 1 1-1.4-1.4 6.5 6.5 0 0 0 0-9.2 1 1 0 0 1 0-1.4z"/>
-    </svg>
+    <button
+      onClick={onClick}
+      className="w-full h-12 rounded-xl bg-white border shadow-sm flex items-center justify-center gap-2 text-[13.5px] font-medium transition active:scale-[0.98]"
+      style={{ borderColor: THEME.line }}
+    >
+      {children}
+      <span>{label}</span>
+    </button>
   );
 }
 
-/** 스피커 OFF (X) */
+/** 아이콘들 */
+function SpeakerOn(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" {...props}>
+      <path fill="currentColor" d="M11 5.5c0-.6-.7-.9-1.1-.5L6.8 8H4.5A1.5 1.5 0 0 0 3 9.5v5A1.5 1.5 0 0 0 4.5 16H6.8l3.1 3c.4.4 1.1.1 1.1-.5V5.5z" />
+      <path d="M16 9a3 3 0 0 1 0 6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
+      <path d="M18 7a6 6 0 0 1 0 10" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
+    </svg>
+  );
+}
 function SpeakerOff(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-      {/* 스피커 몸체 */}
-      <path d="M11 5.5c0-.6-.7-.9-1.1-.5L6.8 8H4.5A1.5 1.5 0 0 0 3 9.5v5A1.5 1.5 0 0 0 4.5 16H6.8l3.1 3c.4.4 1.1.1 1.1-.5V5.5z"/>
-      {/* 음소거 X */}
-      <path d="M15.2 9.2a.9.9 0 0 1 1.3 0l1.0 1.0 1.0-1.0a.9.9 0 1 1 1.3 1.3l-1.0 1.0 1.0 1.0a.9.9 0 1 1-1.3 1.3l-1.0-1.0-1.0 1.0a.9.9 0 1 1-1.3-1.3l1.0-1.0-1.0-1.0a.9.9 0 0 1 0-1.3z"/>
+    <svg viewBox="0 0 24 24" {...props}>
+      <path fill="currentColor" d="M11 5.5c0-.6-.7-.9-1.1-.5L6.8 8H4.5A1.5 1.5 0 0 0 3 9.5v5A1.5 1.5 0 0 0 4.5 16H6.8l3.1 3c.4.4 1.1.1 1.1-.5V5.5z" />
+      <line x1="15" y1="9" x2="21" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <line x1="21" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
 function PhoneIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M22 16.5v3a2 2 0 0 1-2.2 2A19.5 19.5 0 0 1 2.5 4.2 2 2 0 0 1 4.5 2h3a2 2 0 0 1 2 1.7c.12.8.32 1.6.58 2.4a2 2 0 0 1-.44 2.1L9 10a16 16 0 0 0 5 5l.7-1.1a2 2 0 0 1 2.1-.45c.8.26 1.6.46 2.4.58A2 2 0 0 1 22 16.5z"
-      />
+      <path strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" d="M22 16.5v3a2 2 0 0 1-2.2 2A19.5 19.5 0 0 1 2.5 4.2 2 2 0 0 1 4.5 2h3a2 2 0 0 1 2 1.7c.12.8.32 1.6.58 2.4a2 2 0 0 1-.44 2.1L9 10a16 16 0 0 0 5 5l.7-1.1a2 2 0 0 1 2.1-.45c.8.26 1.6.46 2.4.58A2 2 0 0 1 22 16.5z" />
     </svg>
   );
 }
@@ -806,10 +678,7 @@ function KakaoIcon(props: React.HTMLAttributes<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" {...props}>
       <rect width="24" height="24" rx="4" fill="#FFE812" />
-      <path
-        d="M12 6.5c-3.3 0-6 2-6 4.6 0 1.7 1.1 3.2 2.9 4l-.6 2.4a.5.5 0 0 0 .8.5l2.7-1.7c.07 0 .27.1.2.1 3.3 0 6-2.1 6-4.7S15.3 6.5 12 6.5z"
-        fill="#381E1F"
-      />
+      <path d="M12 6.5c-3.3 0-6 2-6 4.6 0 1.7 1.1 3.2 2.9 4l-.6 2.4a.5.5 0 0 0 .8.5l2.7-1.7c.07 0 .27.1.2.1 3.3 0 6-2.1 6-4.7S15.3 6.5 12 6.5z" fill="#381E1F" />
     </svg>
   );
 }
