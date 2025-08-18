@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-/** ───────── 고정 텍스트/테마 ───────── */
+/** ───────── 테마/상수 ───────── */
 const BGM_SRC = "/bgm/romantic-melody.mp3";
 const THEME = {
   bg: "#FFF7F1",
@@ -20,7 +20,7 @@ const VENUE_TEL = "02-2197-0230";
 const KAKAO_EMBED_TIMESTAMP = "1755523431572";
 const KAKAO_EMBED_KEY = "7m3ejw8zpmp";
 
-/** 앱 버튼 통합 검색어(“아펠가모 공덕” 고정) */
+/** 앱 버튼 검색어 */
 const MAP_QUERY = "아펠가모 공덕";
 
 /** 연락처/계좌 */
@@ -40,7 +40,7 @@ const BRIDE_ACCOUNTS = [
   { bank: "국민", number: "000-000-000000", holder: "정원경" },
 ];
 
-/** index.json 타입 */
+/** 앨범 index.json 타입 */
 type AlbumIndex = { main: string; album: string[] };
 
 /** 유틸 */
@@ -53,8 +53,9 @@ function daysUntil(iso: string) {
   return Math.ceil((startOf(event) - startOf(today)) / 86400000);
 }
 
+/** ───────── 메인 컴포넌트 ───────── */
 export default function WeddingInvite() {
-  /** ── BGM ── */
+  /** BGM */
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const toggleBgm = async () => {
@@ -71,12 +72,12 @@ export default function WeddingInvite() {
     }
   };
 
-  /** ── 날짜 파생 ── */
+  /** 날짜 파생 */
   const eventDate = useMemo(() => new Date(WEDDING_ISO), []);
   const mm = pad2(eventDate.getMonth() + 1);
   const dd = pad2(eventDate.getDate());
 
-  /** ── D-day (자정 자동 갱신) ── */
+  /** D-day (자정 자동 갱신) */
   const [dDay, setDDay] = useState(() => daysUntil(WEDDING_ISO));
   useEffect(() => {
     const update = () => setDDay(daysUntil(WEDDING_ISO));
@@ -97,7 +98,7 @@ export default function WeddingInvite() {
     };
   }, []);
 
-  /** ── 2025-12 달력 ── */
+  /** 2025-12 달력 */
   const days = ["일", "월", "화", "수", "목", "금", "토"];
   const dec2025Cells = useMemo(() => {
     const first = new Date("2025-12-01T00:00:00+09:00");
@@ -109,7 +110,7 @@ export default function WeddingInvite() {
     return cells;
   }, []);
 
-  /** ── index.json 로드 ── */
+  /** 앨범 index.json 로드 */
   const [albumIndex, setAlbumIndex] = useState<AlbumIndex | null>(null);
   const [albumError, setAlbumError] = useState<string | null>(null);
   useEffect(() => {
@@ -149,7 +150,7 @@ export default function WeddingInvite() {
     ? `/images/album/${albumIndex.main}`
     : "/images/album/Bloom_25_06_13_073904.JPG";
 
-  /** ── 복사 ── */
+  /** 복사 */
   const copy = async (txt: string) => {
     try {
       await navigator.clipboard.writeText(txt);
@@ -157,107 +158,108 @@ export default function WeddingInvite() {
     } catch {}
   };
 
-  /** ── 렌더 ── */
+  /** 렌더 */
   return (
     <main className="min-h-screen font-sans" style={{ background: THEME.bg, color: THEME.ink }}>
       {/* 상단 그라데이션 */}
       <div
-        className="fixed inset-x-0 top-0 h-28 pointer-events-none -z-0"
-        style={{ background: "linear-gradient(180deg, rgba(214,120,120,0.12), rgba(214,120,120,0))" }}
+        className="fixed inset-x-0 top-0 h-24 pointer-events-none -z-0"
+        style={{ background: "linear-gradient(180deg, rgba(214,120,120,0.10), rgba(214,120,120,0))" }}
       />
 
-      {/* BGM 토글 버튼 (회색 원형 + 흰색 아이콘) */}
+      {/* BGM 토글 (회색 원 + 흰색 아이콘) */}
       <button
         onClick={toggleBgm}
         aria-label={isPlaying ? "배경음악 일시정지" : "배경음악 재생"}
         aria-pressed={isPlaying}
-        className="fixed right-4 top-4 z-20 w-12 h-12 rounded-full shadow-md flex items-center justify-center transition active:scale-95"
-        style={{ background: "#8F8F8F", color: "#fff" }}
+        className="fixed right-3.5 top-3.5 z-20 w-11 h-11 rounded-full shadow-md flex items-center justify-center transition active:scale-95"
+        style={{ background: "#9b9b9b", color: "#fff" }}
       >
-        {isPlaying ? <SpeakerOn width={22} height={22} /> : <SpeakerOff width={22} height={22} />}
+        {isPlaying ? <SpeakerOn width={20} height={20} /> : <SpeakerOff width={20} height={20} />}
       </button>
       <audio ref={audioRef} src={BGM_SRC} preload="none" loop className="hidden" />
 
-      {/* 대형 타이포 배너 */}
-      <section className="max-w-md mx-auto px-5 pt-10 pb-6">
+      {/* 1) 대형 타이포 배너 */}
+      <section className="max-w-md mx-auto px-5 pt-10 pb-5">
         <div className="flex items-end justify-between">
           <h1
             className="tracking-[0.2em]"
-            style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(24px, 5.5vw, 36px)", fontWeight: 500 }}
+            style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(22px, 5vw, 32px)", fontWeight: 500 }}
           >
             이&nbsp;현&nbsp;석
           </h1>
 
-          <div className="text-center mx-3 select-none">
-            <div className="leading-none" style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(44px, 12vw, 88px)", letterSpacing: "0.02em" }}>
+        <div className="text-center mx-3 select-none">
+            <div className="leading-none" style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(40px, 10.5vw, 72px)" }}>
               {mm}
             </div>
-            <div className="w-10 mx-auto my-1 border-t" style={{ borderColor: "#DADADA" }} />
-            <div className="leading-none" style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(44px, 12vw, 88px)", letterSpacing: "0.02em" }}>
+            <div className="w-9 mx-auto my-1 border-t" style={{ borderColor: "#DADADA" }} />
+            <div className="leading-none" style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(40px, 10.5vw, 72px)" }}>
               {dd}
             </div>
           </div>
 
           <h1
             className="tracking-[0.2em] text-right"
-            style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(24px, 5.5vw, 36px)", fontWeight: 500 }}
+            style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(22px, 5vw, 32px)", fontWeight: 500 }}
           >
             유&nbsp;지&nbsp;현
           </h1>
         </div>
 
-        <p className="mt-3 text-center text-gray-600" style={{ fontSize: "clamp(12px, 2.8vw, 14px)" }}>
+        <p className="mt-3 text-center text-gray-600" style={{ fontSize: "clamp(12px, 2.6vw, 13.5px)" }}>
           2025년 12월 7일 일요일 15:30 · {VENUE_NAME}
         </p>
       </section>
 
-      {/* 메인 이미지 */}
+      {/* 2) 메인 이미지 */}
       <section className="max-w-md mx-auto px-5">
-        <figure className="rounded-[28px] overflow-hidden shadow-lg bg-white">
-          <img src={MAIN_IMG} alt="메인 웨딩 사진" className="w-full h-[60svh] object-cover" loading="lazy" />
+        <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white">
+          <img src={MAIN_IMG} alt="메인 웨딩 사진" className="w-full h-[48svh] object-cover" loading="lazy" />
         </figure>
       </section>
 
-      {/* 시/인용 섹션 (선택) */}
-      <section className="max-w-md mx-auto px-5 mt-10">
-        <Card className="text-center p-8">
-          <p
-            className="text-gray-800"
-            style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(18px, 4.2vw, 24px)", lineHeight: 1.9 }}
+      {/* 3) 시 + 초대문 (합본 카드) */}
+      <section className="max-w-md mx-auto px-5 mt-8">
+        <Card className="text-center p-7">
+          <div className="flex justify-center">
+            <div className="w-8 h-8 rounded-full bg-[#F6E8E8]/60 flex items-center justify-center">
+              <span aria-hidden className="text-[10px] text-[#8a6a6a]">✿</span>
+            </div>
+          </div>
+
+          {/* 시 */}
+          <div
+            className="mt-4 text-gray-800"
+            style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(16px, 3.7vw, 20px)", lineHeight: 1.85 }}
           >
-            장담하건대, 세상이 다 겨울이어도<br />
-            우리 사랑은 늘봄처럼 따뜻하고<br />
-            간혹, 여름처럼 뜨거울 겁니다
-            <br />
-            <span className="text-gray-500" style={{ fontSize: "0.9em" }}>
-              – 이수동, &lt;사랑가&gt; –
-            </span>
-          </p>
+            <p>장담하건대, 세상이 다 겨울이어도</p>
+            <p className="mt-1.5">우리 사랑은 늘봄처럼 따뜻하고</p>
+            <p className="mt-1.5">간혹, 여름처럼 뜨거울 겁니다</p>
+            <p className="mt-2 text-gray-500" style={{ fontSize: "0.95em" }}>– 이수동, &lt;사랑가&gt; –</p>
+          </div>
+
+          <div className="my-6 h-px" style={{ background: "#eee" }} />
+
+          {/* 초대문 */}
+          <h3 className="tracking-[0.35em] text-gray-500" style={{ fontSize: "clamp(11px, 2.6vw, 13px)" }}>
+            INVITATION
+          </h3>
+          <div className="mt-4 text-gray-900" style={{ fontSize: "clamp(16px, 3.6vw, 20px)", lineHeight: 1.85 }}>
+            <p>사랑이 봄처럼 시작되어</p>
+            <p className="mt-1.5">겨울의 약속으로 이어집니다.</p>
+            <p className="mt-1.5">하루하루의 마음이 저희의 계절을 만들었으니</p>
+            <p className="mt-1.5">함께 오셔서 따뜻히 축복해 주시면 감사하겠습니다.</p>
+          </div>
+
+          <div className="mt-6 text-[12.5px] text-gray-600">
+            2025년 12월 7일 일요일 오후 3시 30분 · {VENUE_NAME}
+          </div>
         </Card>
       </section>
 
-      {/* 초대 문구 */}
-      <section className="max-w-md mx-auto px-5 mt-6">
-        <div className="rounded-[28px] shadow p-8 text-center bg-white">
-          <h3 className="tracking-[0.35em] text-gray-500" style={{ fontSize: "clamp(12px, 2.8vw, 14px)" }}>
-            INVITATION
-          </h3>
-
-          <div className="mt-5 text-gray-900" style={{ fontSize: "clamp(17px, 3.9vw, 22px)", lineHeight: 1.9 }}>
-            <p>사랑이 봄처럼 시작되어</p>
-            <p className="mt-2">겨울의 약속으로 이어집니다.</p>
-            <p className="mt-2">하루하루의 마음이 저희의 계절을 만들었으니</p>
-            <p className="mt-2">함께 오셔서 따뜻히 축복해 주시면 감사하겠습니다.</p>
-          </div>
-
-          <div className="mt-6 text-[13px] text-gray-600">
-            2025년 12월 7일 일요일 오후 3시 30분 · 아펠가모 공덕 라로브홀
-          </div>
-        </div>
-      </section>
-
-      {/* 연락 라인 */}
-      <section className="max-w-md mx-auto px-5 mt-6">
+      {/* 4) 연락 라인 */}
+      <section className="max-w-md mx-auto px-5 mt-5">
         <Card>
           <ContactRow label={GROOM_LINE} tel={GROOM_TEL} />
           <Divider />
@@ -265,49 +267,16 @@ export default function WeddingInvite() {
         </Card>
       </section>
 
-      {/* 달력 + D-day */}
+      {/* 5) 달력 + D-day */}
       <CalendarCard days={days} cells={dec2025Cells} highlight={THEME.hl} dDay={dDay} />
 
-      {/* 앨범 */}
-      <section className="max-w-md mx-auto px-5 mt-6">
-        <Card>
-          <h3 className="text-center font-semibold mb-3" style={{ color: THEME.hl, fontSize: "clamp(16px,4.5vw,18px)" }}>
-            ALBUM
-          </h3>
-          {albumError && <p className="text-sm text-red-500 text-center mb-3">{albumError}</p>}
-
-          <div className="grid grid-cols-3 gap-3">
-            {albumIndex?.album.map((file, idx) => (
-              <figure key={`${file}-${idx}`} className="rounded-xl overflow-hidden bg-gray-100">
-                <img
-                  src={`/images/album/${file}`}
-                  alt={`album-${idx}`}
-                  loading="lazy"
-                  className="w-full aspect-square object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                    console.warn("이미지 로드 실패:", `/images/album/${file}`);
-                  }}
-                />
-              </figure>
-            ))}
-          </div>
-
-          <p className="text-[11px] text-gray-500 text-center mt-3">
-            기준 경로 <code>/public/images/album/</code> · <code>index.json</code> 파일명 내림차순 정렬
-          </p>
-        </Card>
-      </section>
-
-      {/* 오시는 길 */}
+      {/* 6) 오시는 길 + 지도/앱 */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <Card className="text-center">
-          <h2 className="font-semibold mb-1.5" style={{ color: THEME.hl, fontSize: "clamp(16px,4.5vw,18px)" }}>
+          <h2 className="font-semibold mb-1.5" style={{ color: THEME.hl, fontSize: "clamp(15px,4vw,17px)" }}>
             오시는 길
           </h2>
-          <p className="font-bold" style={{ fontSize: "clamp(15px,4vw,16px)" }}>
-            {VENUE_NAME}
-          </p>
+          <p className="font-bold" style={{ fontSize: "clamp(14.5px,3.8vw,16px)" }}>{VENUE_NAME}</p>
           <p className="mt-1 text-gray-700" style={{ fontSize: "clamp(13px,3.2vw,14px)" }}>
             {VENUE_ADDR}
           </p>
@@ -366,13 +335,44 @@ export default function WeddingInvite() {
         </Card>
       </section>
 
-      {/* 교통/주차/안내 */}
+      {/* 7) 교통/주차/안내 */}
       <InfoSections highlight={THEME.hl} />
 
-      {/* 마음 전하는 곳 */}
+      {/* 8) 앨범 */}
+      <section className="max-w-md mx-auto px-5 mt-6">
+        <Card>
+          <h3 className="text-center font-semibold mb-3" style={{ color: THEME.hl, fontSize: "clamp(15px,4vw,17px)" }}>
+            ALBUM
+          </h3>
+          {albumError && <p className="text-sm text-red-500 text-center mb-3">{albumError}</p>}
+
+          <div className="grid grid-cols-3 gap-2.5">
+            {albumIndex?.album.map((file, idx) => (
+              <figure key={`${file}-${idx}`} className="rounded-xl overflow-hidden bg-gray-100">
+                <img
+                  src={`/images/album/${file}`}
+                  alt={`album-${idx}`}
+                  loading="lazy"
+                  className="w-full aspect-square object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                    console.warn("이미지 로드 실패:", `/images/album/${file}`);
+                  }}
+                />
+              </figure>
+            ))}
+          </div>
+
+          <p className="text-[11px] text-gray-500 text-center mt-3">
+            기준 경로 <code>/public/images/album/</code> · <code>index.json</code> 파일명 내림차순 정렬
+          </p>
+        </Card>
+      </section>
+
+      {/* 9) 마음 전하는 곳 */}
       <section className="max-w-md mx-auto px-5 mt-6 pb-20">
         <Card>
-          <h2 className="text-center font-semibold mb-3" style={{ color: THEME.hl, fontSize: "clamp(16px,4.5vw,18px)" }}>
+          <h2 className="text-center font-semibold mb-3" style={{ color: THEME.hl, fontSize: "clamp(15px,4vw,17px)" }}>
             마음을 전하는 곳
           </h2>
           <Accordion title="신랑측 계좌번호">
@@ -392,7 +392,7 @@ export default function WeddingInvite() {
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-[28px] shadow p-6 bg-white ${className}`} style={{ background: THEME.card }}>
+    <div className={`rounded-[20px] shadow-sm p-6 bg-white ${className}`} style={{ background: THEME.card }}>
       {children}
     </div>
   );
@@ -401,6 +401,7 @@ function Divider() {
   return <div className="my-3 h-px" style={{ background: THEME.line }} />;
 }
 
+/** Kakao roughmap embed */
 function KakaoRoughMap({
   timestamp,
   mapKey,
@@ -417,17 +418,11 @@ function KakaoRoughMap({
     const LOADER_CLASS = "daum_roughmap_loader_script";
     const ensureLoader = () =>
       new Promise<void>((resolve) => {
-        if ((window as any).daum?.roughmap?.Lander) {
-          resolve();
-          return;
-        }
+        if ((window as any).daum?.roughmap?.Lander) { resolve(); return; }
         const existing = document.querySelector(`script.${LOADER_CLASS}`);
         if (existing) {
           const iv = setInterval(() => {
-            if ((window as any).daum?.roughmap?.Lander) {
-              clearInterval(iv);
-              resolve();
-            }
+            if ((window as any).daum?.roughmap?.Lander) { clearInterval(iv); resolve(); }
           }, 50);
           return;
         }
@@ -451,9 +446,7 @@ function KakaoRoughMap({
       lander.render();
     });
 
-    return () => {
-      disposed = true;
-    };
+    return () => { disposed = true; };
   }, [timestamp, mapKey, width, height]);
 
   return <div id={containerId} className="root_daum_roughmap root_daum_roughmap_landing" />;
@@ -464,7 +457,7 @@ function ContactRow({ label, tel }: { label: string; tel: string }) {
   const digits = tel.replace(/[^0-9]/g, "");
   return (
     <div className="flex items-center justify-between gap-3">
-      <p className="text-[15px]">{label}</p>
+      <p className="text-[14.5px]">{label}</p>
       <div className="flex items-center gap-2">
         <a
           href={`tel:${digits}`}
@@ -506,15 +499,13 @@ function CalendarCard({
   return (
     <section className="max-w-md mx-auto px-5 mt-6">
       <Card>
-        <h3 className="text-center font-medium" style={{ fontSize: "clamp(18px,4.5vw,22px)" }}>
+        <h3 className="text-center font-medium" style={{ fontSize: "clamp(17px,4.2vw,21px)" }}>
           12월
         </h3>
-        <div className="grid grid-cols-7 gap-3 text-center text-gray-600 mt-3" style={{ fontSize: "clamp(12px,3vw,14px)" }}>
-          {days.map((d) => (
-            <div key={d}>{d}</div>
-          ))}
+        <div className="grid grid-cols-7 gap-3 text-center text-gray-600 mt-3" style={{ fontSize: "clamp(11px,2.8vw,13px)" }}>
+          {days.map((d) => <div key={d}>{d}</div>)}
         </div>
-        <div className="grid grid-cols-7 gap-3 text-center mt-2" style={{ fontSize: "clamp(16px,4.5vw,20px)" }}>
+        <div className="grid grid-cols-7 gap-3 text-center mt-2" style={{ fontSize: "clamp(15px,4vw,18px)" }}>
           {cells.map((n, i) =>
             n === null ? (
               <div key={i} />
@@ -529,7 +520,7 @@ function CalendarCard({
             )
           )}
         </div>
-        <p className="mt-5 text-center" style={{ color: highlight, fontSize: "clamp(15px,4vw,18px)" }}>
+        <p className="mt-5 text-center" style={{ color: highlight, fontSize: "clamp(14px,3.6vw,16px)" }}>
           이현석 ❤ 유지현 의 결혼식 {label}
         </p>
       </Card>
@@ -569,7 +560,7 @@ function InfoSections({ highlight }: { highlight: string }) {
 function InfoBlock({ title, highlight, children }: { title: string; highlight: string; children: React.ReactNode }) {
   return (
     <div>
-      <h4 className="font-semibold mb-1.5" style={{ color: highlight, fontSize: "clamp(15px,4vw,16px)" }}>
+      <h4 className="font-semibold mb-1.5" style={{ color: highlight, fontSize: "clamp(15px,4vw,17px)" }}>
         {title}
       </h4>
       <p className="text-gray-700" style={{ fontSize: "clamp(14px,3.6vw,15px)", lineHeight: 1.8 }}>
@@ -586,9 +577,7 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
     <div className="border rounded-2xl bg-white shadow-sm mb-3 overflow-hidden" style={{ borderColor: THEME.line }}>
       <button onClick={() => setOpen((v) => !v)} className="w-full flex items-center justify-between px-4 py-3 text-left">
         <span className="text-[15px]">{title}</span>
-        <span className="text-xl" aria-hidden>
-          {open ? "▾" : "▸"}
-        </span>
+        <span className="text-xl" aria-hidden>{open ? "▾" : "▸"}</span>
       </button>
       {open && <div className="px-4 pb-4">{children}</div>}
     </div>
