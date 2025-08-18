@@ -12,15 +12,15 @@ const VENUE_TEL = "02-2197-0230";
 /** 하단 앱 버튼 검색어(라로브홀 제외) */
 const VENUE_SEARCH = "아펠가모 공덕";
 
-/** ▼ 카카오 퍼가기 값(네가 준 값) */
+/** ▼ 카카오 퍼가기 값 (네가 제공한 값) */
 const KAKAO_ROUGHMAP_TIMESTAMP = "1755526725995";
 const KAKAO_ROUGHMAP_KEY = "78iir7azr4f";
 const KAKAO_MAP_HEIGHT = 360;
 
-/** 앨범 인덱스 타입 */
+/** index.json 타입 */
 type AlbumIndex = { main: string; album: string[] };
 
-/* ====================== 카카오 roughmap 컴포넌트 ====================== */
+/* ====================== 카카오 roughmap (퍼가기) 컴포넌트 ====================== */
 function KakaoRoughMap({
   timestamp,
   mapKey,
@@ -37,57 +37,41 @@ function KakaoRoughMap({
   useEffect(() => {
     let disposed = false;
 
-    const waitForDaum = () =>
+    const waitForLoader = () =>
       new Promise<void>((resolve) => {
         const ok = () => (window as any).daum?.roughmap?.Lander;
         if (ok()) return resolve();
         const iv = setInterval(() => {
-          if (ok()) {
-            clearInterval(iv);
-            resolve();
-          }
+          if (ok()) { clearInterval(iv); resolve(); }
         }, 50);
       });
 
     const waitForContainer = () =>
       new Promise<void>((resolve) => {
         const tick = () => {
-          const el = document.getElementById(containerId);
-          if (el) resolve();
+          if (document.getElementById(containerId)) resolve();
           else requestAnimationFrame(tick);
         };
         tick();
       });
 
     (async () => {
+      await waitForLoader();
       await waitForContainer();
-      await waitForDaum();
       if (disposed) return;
 
-      // 이미 랜더된 경우 중복 방지: 컨테이너 비우기
       const root = document.getElementById(containerId);
       if (!root) return;
-      root.innerHTML = "";
+      root.innerHTML = ""; // 재렌더 안전
 
-      const lander = new (window as any).daum.roughmap.Lander({
+      new (window as any).daum.roughmap.Lander({
         timestamp,
         key: mapKey,
         mapWidth: typeof width === "number" ? `${width}px` : width,
         mapHeight: typeof height === "number" ? `${height}px` : height,
-      });
-      lander.render();
+      }).render();
 
-      // 핀치/드래그 제스처 허용
-      root.style.touchAction = "auto";
-      const observer = new MutationObserver(() => {
-        const iframe = root.querySelector("iframe") as HTMLIFrameElement | null;
-        if (iframe) {
-          iframe.style.pointerEvents = "auto";
-          (iframe.style as any).touchAction = "auto";
-        }
-      });
-      observer.observe(root, { childList: true, subtree: true });
-      return () => observer.disconnect();
+      (root.style as any).touchAction = "auto"; // 핀치/드래그 허용
     })();
 
     return () => {
@@ -95,7 +79,7 @@ function KakaoRoughMap({
       const el = document.getElementById(containerId);
       if (el) el.innerHTML = "";
     };
-  }, [containerId, height, mapKey, width]);
+  }, [timestamp, mapKey, width, height, containerId]);
 
   return (
     <div
@@ -109,7 +93,7 @@ function KakaoRoughMap({
     />
   );
 }
-/* ===================================================================== */
+/* ============================================================================ */
 
 export default function WeddingInvite() {
   /** ── BGM ── */
@@ -266,7 +250,7 @@ export default function WeddingInvite() {
             </a>
           </div>
 
-          {/* ✅ 실제 카카오 지도(핀치줌/드래그 가능) */}
+          {/* ✅ 카카오 퍼가기 지도 (핀치/드래그 가능) — “자세히 보기” 버튼 제거 */}
           <div className="mt-5 rounded-xl overflow-hidden shadow-sm">
             <KakaoRoughMap
               timestamp={KAKAO_ROUGHMAP_TIMESTAMP}
