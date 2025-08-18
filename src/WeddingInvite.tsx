@@ -9,17 +9,15 @@ const VENUE_NAME = "아펠가모 공덕 라로브홀";
 const VENUE_ADDR = "서울 마포구 마포대로 92 효성해링턴스퀘어 B동 7층";
 const VENUE_TEL = "02-2197-0230";
 
-/** 하단 버튼에서 쓸 검색어(라로브홀 제외) */
-const VENUE_SEARCH = "아펠가모 공덕";
+/** 지도(자세히 보기) 링크는 유지 — 단, 페이지 내 미리보기는 카카오 roughmap 사용 */
+const NAVER_VIEW_URL = "https://naver.me/Gj7ZwO7U";
 
-/** 카카오 지도 iframe (사용자가 제공한 좌표) */
-const KAKAO_URL_X = 489498;
-const KAKAO_URL_Y = 1123000;
-const KAKAO_URL_LEVEL = 3;
-const KAKAO_IFRAME_SRC = `https://map.kakao.com/?urlX=${KAKAO_URL_X}&urlY=${KAKAO_URL_Y}&urlLevel=${KAKAO_URL_LEVEL}&map_type=TYPE_MAP&map_hybrid=false`;
+/** 카카오 roughmap 퍼가기 키 */
+const KAKAO_EMBED_TIMESTAMP = "1755523431572";
+const KAKAO_EMBED_KEY = "7m3ejw8zpmp";
 
-/** 카카오 썸네일(혹시 iframe 차단 시 대체로 링크 클릭) */
-const KAKAO_THUMB_SRC = `https://map2.daum.net/map/mapservice?FORMAT=PNG&SCALE=2.5&MX=${KAKAO_URL_X}&MY=${KAKAO_URL_Y}&S=0&IW=504&IH=310&LANG=0&COORDSTM=WCONGNAMUL&logo=kakao_logo`;
+/** 하단 앱 버튼 검색어(“아펠가모 공덕”만 사용) */
+const MAP_QUERY = "아펠가모 공덕";
 
 const GROOM_LINE = "이영철 · 이경희 의 아들 현석";
 const BRIDE_LINE = "유기만 · 정원경 의 딸 지현";
@@ -57,8 +55,7 @@ export default function WeddingInvite() {
   const dDay = useMemo(() => {
     const event = new Date(WEDDING_ISO);
     const today = new Date();
-    const startOf = (d: Date) =>
-      new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
     return Math.ceil((startOf(event) - startOf(today)) / 86400000);
   }, []);
 
@@ -77,41 +74,31 @@ export default function WeddingInvite() {
   /** ── index.json 로드 ── */
   const [albumIndex, setAlbumIndex] = useState<AlbumIndex | null>(null);
   const [albumError, setAlbumError] = useState<string | null>(null);
-
   useEffect(() => {
     let canceled = false;
-    (async () => {
+    const load = async () => {
       try {
         const res = await fetch("/images/album/index.json", { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as AlbumIndex;
 
-        const sortedUnique = Array.from(
-          new Set(
-            [...data.album]
-              .filter((f) => f && typeof f === "string")
-              .map((f) => String(f).trim())
-              .filter(Boolean)
-          )
-        ).sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+        const sortedUnique = Array.from(new Set(
+          [...data.album]
+            .filter((f) => f && typeof f === "string")
+            .map((f) => f.trim())
+            .filter(Boolean)
+        )).sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
 
-        if (!canceled) {
-          setAlbumIndex({ main: data.main, album: sortedUnique });
-          setAlbumError(null);
-        }
+        if (!canceled) { setAlbumIndex({ main: data.main, album: sortedUnique }); setAlbumError(null); }
       } catch {
-        if (!canceled) {
-          setAlbumIndex(null);
-          setAlbumError("앨범 목록(index.json)을 불러오지 못했습니다.");
-        }
+        if (!canceled) { setAlbumIndex(null); setAlbumError("앨범 목록(index.json)을 불러오지 못했습니다."); }
       }
-    })();
+    };
+    load();
     return () => { canceled = true; };
   }, []);
 
-  const MAIN_IMG = albumIndex
-    ? `/images/album/${albumIndex.main}`
-    : "/images/album/Bloom_25_06_13_073904.JPG";
+  const MAIN_IMG = albumIndex ? `/images/album/${albumIndex.main}` : "/images/album/Bloom_25_06_13_073904.JPG";
 
   /** ── 복사 ── */
   const copy = async (txt: string) => {
@@ -124,6 +111,7 @@ export default function WeddingInvite() {
       <button
         onClick={toggleBgm}
         aria-label={isPlaying ? "배경음악 일시정지" : "배경음악 재생"}
+        title={isPlaying ? "배경음악 일시정지" : "배경음악 재생"}
         aria-pressed={isPlaying}
         className={`fixed left-3 top-3 z-20 w-11 h-11 rounded-full bg-white/95 backdrop-blur shadow flex items-center justify-center border
           ${isPlaying ? "border-rose-200 ring-2 ring-rose-100" : "border-gray-200"}`}
@@ -135,16 +123,10 @@ export default function WeddingInvite() {
 
       {/* 타이틀 */}
       <section className="max-w-md mx-auto px-5 pt-8 pb-3 text-center">
-        <h2
-          className="tracking-[0.35em] text-[12px] text-gray-800"
-          style={{ fontFamily: `'Noto Serif KR', ui-serif, serif` }}
-        >
+        <h2 className="tracking-[0.35em] text-[12px] text-gray-800" style={{ fontFamily: `'Noto Serif KR', ui-serif, serif` }}>
           WEDDING INVITATION
         </h2>
-        <h1
-          className="mt-2 text-2xl"
-          style={{ fontFamily: `'Noto Serif KR', ui-serif, serif` }}
-        >
+        <h1 className="mt-2 text-2xl" style={{ fontFamily: `'Noto Serif KR', ui-serif, serif` }}>
           이현석 &nbsp;&amp;&nbsp; 유지현
         </h1>
       </section>
@@ -152,12 +134,7 @@ export default function WeddingInvite() {
       {/* 메인 이미지 */}
       <section className="max-w-md mx-auto px-4">
         <div className="rounded-2xl overflow-hidden shadow bg-white">
-          <img
-            src={MAIN_IMG}
-            alt="메인 웨딩 사진"
-            className="w-full h-[52svh] object-cover"
-            loading="lazy"
-          />
+          <img src={MAIN_IMG} alt="메인 웨딩 사진" className="w-full h-[52svh] object-cover" loading="lazy" />
         </div>
       </section>
 
@@ -192,43 +169,29 @@ export default function WeddingInvite() {
       {/* 앨범 */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <div className="bg-white rounded-2xl shadow p-5">
-          <h3 className="text-center text-lg tracking-wide mb-4" style={{ color: HIGHLIGHT }}>
-            ALBUM
-          </h3>
-
-          {albumError && (
-            <p className="text-sm text-red-500 text-center mb-3">{albumError}</p>
-          )}
-
+          <h3 className="text-center text-lg tracking-wide mb-4" style={{ color: HIGHLIGHT }}>ALBUM</h3>
+          {albumError && <p className="text-sm text-red-500 text-center mb-3">{albumError}</p>}
           <div className="grid grid-cols-3 gap-3">
             {albumIndex?.album.map((file, idx) => (
               <figure key={`${file}-${idx}`} className="rounded-xl overflow-hidden bg-gray-100">
                 <img
-                  src={`/images/album/${file}`}
-                  alt={`album-${idx}`}
-                  loading="lazy"
+                  src={`/images/album/${file}`} alt={`album-${idx}`} loading="lazy"
                   className="w-full h-full object-cover aspect-[4/3]"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                    console.warn("이미지 로드 실패:", `/images/album/${file}`);
-                  }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; console.warn("이미지 로드 실패:", `/images/album/${file}`); }}
                 />
               </figure>
             ))}
           </div>
-
           <p className="text-xs text-gray-500 text-center mt-3">
             앨범 폴더: <code>/public/images/album/</code> · <code>index.json</code>의 파일명을 기준으로 표시(내림차순)
           </p>
         </div>
       </section>
 
-      {/* ───────── 오시는 길 : 카카오 지도(iframe) ───────── */}
+      {/* ───────── 오시는 길 (카카오 지도 퍼가기) ───────── */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <div className="bg-white rounded-2xl shadow p-6 text-center">
-          <h2 className="text-xl font-semibold mb-2" style={{ color: HIGHLIGHT }}>
-            오시는 길
-          </h2>
+          <h2 className="text-xl font-semibold mb-2" style={{ color: HIGHLIGHT }}>오시는 길</h2>
           <p className="text-lg font-bold">{VENUE_NAME}</p>
           <p className="mt-1 text-gray-700">{VENUE_ADDR}</p>
 
@@ -238,38 +201,39 @@ export default function WeddingInvite() {
               href={`tel:${VENUE_TEL.replace(/[^0-9]/g, "")}`}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm"
             >
-              <PhoneIcon width={16} height={16} />
-              안내 전화
+              <PhoneIcon width={16} height={16} /> 안내 전화
             </a>
           </div>
 
-          {/* ✅ 인터랙티브 카카오 지도 (핀치 줌/드래그 가능) */}
+          {/* 실제 카카오 지도(핀치줌/드래그 가능) */}
           <div className="mt-5 rounded-xl overflow-hidden shadow-sm">
-            <iframe
-              title="카카오 지도"
-              src={KAKAO_IFRAME_SRC}
+            <KakaoRoughMap
+              timestamp={KAKAO_EMBED_TIMESTAMP}
+              mapKey={KAKAO_EMBED_KEY}
               width="100%"
-              height="320"
-              style={{ border: 0 }}
-              allowFullScreen
+              height={360}
             />
           </div>
 
-          {/* (선택) iframe이 특정 브라우저에서 막힐 경우 대비한 얇은 대체 링크 */}
-          <noscript>
-            <a href={KAKAO_IFRAME_SRC} target="_blank" rel="noopener noreferrer">
-              <img src={KAKAO_THUMB_SRC} alt="카카오 지도" width="100%" height="320" />
-            </a>
-          </noscript>
+          {/* 자세히 보기(네이버) */}
+          <a
+            href={NAVER_VIEW_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mt-4 px-5 py-2 rounded-lg text-white"
+            style={{ backgroundColor: HIGHLIGHT }}
+          >
+            지도를 자세히 보려면 여기를 눌러주세요
+          </a>
 
-          {/* 하단 앱 버튼 3종 — 검색어는 '아펠가모 공덕' 고정 */}
+          {/* 하단 앱 버튼 3종 — 검색어는 “아펠가모 공덕”만 */}
           <div className="mt-5 grid grid-cols-3 gap-3">
             <AppButton
               label="네이버 지도"
               onClick={() =>
                 openWithFallback(
-                  `nmap://search?query=${encodeURIComponent(VENUE_SEARCH)}`,
-                  `https://map.naver.com/v5/search/${encodeURIComponent(VENUE_SEARCH)}`
+                  `nmap://search?query=${encodeURIComponent(MAP_QUERY)}`,
+                  `https://map.naver.com/v5/search/${encodeURIComponent(MAP_QUERY)}`
                 )
               }
             >
@@ -280,8 +244,8 @@ export default function WeddingInvite() {
               label="카카오 내비"
               onClick={() =>
                 openWithFallback(
-                  `kakaomap://search?q=${encodeURIComponent(VENUE_SEARCH)}`,
-                  `https://map.kakao.com/?q=${encodeURIComponent(VENUE_SEARCH)}`
+                  `kakaomap://search?q=${encodeURIComponent(MAP_QUERY)}`,
+                  `https://map.kakao.com/?q=${encodeURIComponent(MAP_QUERY)}`
                 )
               }
             >
@@ -292,9 +256,8 @@ export default function WeddingInvite() {
               label="티맵"
               onClick={() =>
                 openWithFallback(
-                  `tmap://search?name=${encodeURIComponent(VENUE_SEARCH)}`,
-                  // 티맵은 웹 딥링크가 마땅치 않아 구글맵 웹으로 폴백
-                  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(VENUE_SEARCH)}`
+                  `tmap://search?name=${encodeURIComponent(MAP_QUERY)}`,
+                  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(MAP_QUERY)}`
                 )
               }
             >
@@ -327,12 +290,61 @@ export default function WeddingInvite() {
 
 /* ───────── 하위 컴포넌트 ───────── */
 
+/** 카카오 roughmap 퍼가기: 퍼가기 스크립트를 동적으로 로드하고 랜더러 실행 */
+function KakaoRoughMap({
+  timestamp,
+  mapKey,
+  width = "100%",
+  height = 360,
+}: { timestamp: string; mapKey: string; width?: number | string; height?: number | string }) {
+  const containerId = `daumRoughmapContainer${timestamp}`;
+
+  useEffect(() => {
+    // 이미 로더가 있으면 재사용
+    const LOADER_CLASS = "daum_roughmap_loader_script";
+    const ensureLoader = () =>
+      new Promise<void>((resolve) => {
+        if ((window as any).daum?.roughmap?.Lander) { resolve(); return; }
+        if (document.querySelector(`script.${LOADER_CLASS}`)) {
+          // 로더가 존재하면 잠시 후 재확인
+          const iv = setInterval(() => {
+            if ((window as any).daum?.roughmap?.Lander) { clearInterval(iv); resolve(); }
+          }, 50);
+          return;
+        }
+        const s = document.createElement("script");
+        s.src = "https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js";
+        s.charset = "UTF-8";
+        s.className = LOADER_CLASS;
+        s.onload = () => resolve();
+        document.body.appendChild(s);
+      });
+
+    let disposed = false;
+    ensureLoader().then(() => {
+      if (disposed) return;
+      const lander = new (window as any).daum.roughmap.Lander({
+        timestamp,
+        key: mapKey,
+        mapWidth: typeof width === "number" ? `${width}px` : width,
+        mapHeight: typeof height === "number" ? `${height}px` : height,
+      });
+      lander.render();
+    });
+
+    return () => { disposed = true; };
+  }, [timestamp, mapKey, width, height]);
+
+  return <div id={containerId} className="root_daum_roughmap root_daum_roughmap_landing" />;
+}
+
+/** 헤드폰 아이콘 */
 function Headphones(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path d="M4 13a8 8 0 1 1 16 0" strokeWidth="1.6" strokeLinecap="round" />
-      <rect x="3" y="12" width="4" height="7" rx="1.2" strokeWidth="1.6" />
-      <rect x="17" y="12" width="4" height="7" rx="1.2" strokeWidth="1.6" />
+      <path d="M4 13a8 8 0 1 1 16 0" strokeWidth="1.6" strokeLinecap="round"/>
+      <rect x="3" y="12" width="4" height="7" rx="1.2" strokeWidth="1.6"/>
+      <rect x="17" y="12" width="4" height="7" rx="1.2" strokeWidth="1.6"/>
     </svg>
   );
 }
@@ -340,16 +352,11 @@ function Headphones(props: React.SVGProps<SVGSVGElement>) {
 function PhoneIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M22 16.5v3a2 2 0 0 1-2.2 2A19.5 19.5 0 0 1 2.5 4.2 2 2 0 0 1 4.5 2h3a2 2 0 0 1 2 1.7c.12.8.32 1.6.58 2.4a2 2 0 0 1-.44 2.1L9 10a16 16 0 0 0 5 5l.7-1.1a2 2 0 0 1 2.1-.45c.8.26 1.6.46 2.4.58A2 2 0 0 1 22 16.5z"
-      />
+      <path strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        d="M22 16.5v3a2 2 0 0 1-2.2 2A19.5 19.5 0 0 1 2.5 4.2 2 2 0 0 1 4.5 2h3a2 2 0 0 1 2 1.7c.12.8.32 1.6.58 2.4a2 2 0 0 1-.44 2.1L9 10a16 16 0 0 0 5 5l.7-1.1a2 2 0 0 1 2.1-.45c.8.26 1.6.46 2.4.58A2 2 0 0 1 22 16.5z"/>
     </svg>
   );
 }
-
 function SmsIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
@@ -365,21 +372,13 @@ function ContactRow({ label, tel }: { label: string; tel: string }) {
     <div className="flex items-center justify-between">
       <p className="text-[15px]">{label}</p>
       <div className="flex items-center gap-2">
-        <a
-          href={`tel:${digits}`}
-          aria-label="전화 걸기"
-          title="전화 걸기"
-          className="w-9 h-9 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-gray-700"
-        >
+        <a href={`tel:${digits}`} aria-label="전화 걸기" title="전화 걸기"
+           className="w-9 h-9 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-gray-700">
           <PhoneIcon width={18} height={18} />
         </a>
-        <a
-          href={`sms:${digits}`}
-          aria-label="문자 보내기"
-          title="문자 보내기"
-          className="w-9 h-9 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-gray-700"
-          style={{ color: HIGHLIGHT }}
-        >
+        <a href={`sms:${digits}`} aria-label="문자 보내기" title="문자 보내기"
+           className="w-9 h-9 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-gray-700"
+           style={{ color: HIGHLIGHT }}>
           <SmsIcon width={18} height={18} />
         </a>
       </div>
@@ -388,37 +387,21 @@ function ContactRow({ label, tel }: { label: string; tel: string }) {
 }
 
 function CalendarCard({
-  days,
-  cells,
-  highlight,
-  dDay,
-}: {
-  days: string[];
-  cells: (number | null)[];
-  highlight: string;
-  dDay: number;
-}) {
+  days, cells, highlight, dDay,
+}: { days: string[]; cells: (number | null)[]; highlight: string; dDay: number; }) {
   return (
     <section className="max-w-md mx-auto px-5 mt-6">
       <div className="bg-white rounded-2xl shadow p-6">
         <h3 className="text-center text-lg font-medium">12월</h3>
         <div className="grid grid-cols-7 gap-3 text-center text-sm font-semibold mt-3">
-          {days.map((d) => (
-            <div key={d}>{d}</div>
-          ))}
+          {days.map((d) => (<div key={d}>{d}</div>))}
         </div>
         <div className="grid grid-cols-7 gap-3 text-center text-lg mt-2">
           {cells.map((n, i) =>
-            n === null ? (
-              <div key={i} />
-            ) : (
-              <div
-                key={i}
-                className={`w-10 h-10 mx-auto flex items-center justify-center rounded-full ${
-                  n === 7 ? "text-white font-bold" : "text-gray-800"
-                }`}
-                style={n === 7 ? { backgroundColor: highlight } : {}}
-              >
+            n === null ? (<div key={i} />) : (
+              <div key={i}
+                className={`w-10 h-10 mx-auto flex items-center justify-center rounded-full ${n === 7 ? "text-white font-bold" : "text-gray-800"}`}
+                style={n === 7 ? { backgroundColor: highlight } : {}}>
                 {n}
               </div>
             )
@@ -461,20 +444,10 @@ function InfoSections({ highlight }: { highlight: string }) {
   );
 }
 
-function InfoBlock({
-  title,
-  highlight,
-  children,
-}: {
-  title: string;
-  highlight: string;
-  children: React.ReactNode;
-}) {
+function InfoBlock({ title, highlight, children }: { title: string; highlight: string; children: React.ReactNode; }) {
   return (
     <div>
-      <h4 className="text-base font-semibold mb-1.5" style={{ color: highlight }}>
-        {title}
-      </h4>
+      <h4 className="text-base font-semibold mb-1.5" style={{ color: highlight }}>{title}</h4>
       <p className="text-[15px] leading-7 text-gray-700">{children}</p>
     </div>
   );
@@ -485,10 +458,7 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
   const [open, setOpen] = useState(false);
   return (
     <div className="border rounded-xl bg-white shadow-sm mb-3 overflow-hidden">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left"
-      >
+      <button onClick={() => setOpen((v) => !v)} className="w-full flex items-center justify-between px-4 py-3 text-left">
         <span className="text-[15px]">{title}</span>
         <span className="text-xl">{open ? "▾" : "▸"}</span>
       </button>
@@ -497,11 +467,8 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
   );
 }
 
-/* 계좌 리스트(계좌번호 원문 복사) */
-function AccountList({
-  accounts,
-  onCopy,
-}: {
+/* 계좌 리스트 */
+function AccountList({ accounts, onCopy }: {
   accounts: { bank: string; number: string; holder: string }[];
   onCopy: (txt: string) => void;
 }) {
@@ -513,10 +480,7 @@ function AccountList({
             <div>{`${a.bank} ${a.number}`}</div>
             <div className="text-gray-500">{a.holder}</div>
           </div>
-          <button
-            onClick={() => onCopy(a.number)}
-            className="shrink-0 rounded-md px-3 py-1 text-sm border border-gray-300"
-          >
+          <button onClick={() => onCopy(a.number)} className="shrink-0 rounded-md px-3 py-1 text-sm border border-gray-300">
             복사
           </button>
         </li>
@@ -526,6 +490,8 @@ function AccountList({
 }
 
 /* ───────── 오시는 길 하단 버튼/아이콘/폴백 로직 ───────── */
+
+/** 앱 스킴 시도 → 실패 시 웹으로 폴백 */
 function openWithFallback(appUrl: string, webUrl: string) {
   const start = Date.now();
   const t = setTimeout(() => {
@@ -543,23 +509,14 @@ function openWithFallback(appUrl: string, webUrl: string) {
   }, 2500);
 }
 
-/** 공통 앱 버튼 */
-function AppButton({
-  label,
-  children,
-  onClick,
-}: {
-  label: string;
-  children: React.ReactNode;
-  onClick: () => void;
+/** 하단 앱 버튼 공통 */
+function AppButton({ label, children, onClick }: {
+  label: string; children: React.ReactNode; onClick: () => void;
 }) {
   return (
-    <button
-      onClick={onClick}
-      className="w-full h-12 rounded-xl bg-white border border-gray-200 shadow-sm flex items-center justify-center gap-2 text-sm"
-    >
-      {children}
-      <span className="font-medium">{label}</span>
+    <button onClick={onClick}
+      className="w-full h-12 rounded-xl bg-white border border-gray-200 shadow-sm flex items-center justify-center gap-2 text-sm">
+      {children}<span className="font-medium">{label}</span>
     </button>
   );
 }
@@ -577,10 +534,7 @@ function KakaoIcon(props: React.HTMLAttributes<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" {...props}>
       <rect width="24" height="24" rx="4" fill="#FFE812" />
-      <path
-        d="M12 6.5c-3.3 0-6 2-6 4.6 0 1.7 1.1 3.2 2.9 4l-.6 2.4a.5.5 0 0 0 .8.5l2.7-1.7c.07 0 .27.1.2.1 3.3 0 6-2.1 6-4.7S15.3 6.5 12 6.5z"
-        fill="#381E1F"
-      />
+      <path d="M12 6.5c-3.3 0-6 2-6 4.6 0 1.7 1.1 3.2 2.9 4l-.6 2.4a.5.5 0 0 0 .8.5l2.7-1.7c.07 0 .27.1.2.1 3.3 0 6-2.1 6-4.7S15.3 6.5 12 6.5z" fill="#381E1F" />
     </svg>
   );
 }
