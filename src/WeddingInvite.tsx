@@ -161,10 +161,13 @@ export default function WeddingInvite() {
   /** 렌더 */
   return (
     <main className="min-h-screen font-sans" style={{ background: THEME.bg, color: THEME.ink }}>
-      {/* 상단 그라데이션 */}
+      {/* 상단 그라데이션 (합성 레이어 힌트) */}
       <div
         className="fixed inset-x-0 top-0 h-24 pointer-events-none -z-0"
-        style={{ background: "linear-gradient(180deg, rgba(214,120,120,0.10), rgba(214,120,120,0))" }}
+        style={{
+          background: "linear-gradient(180deg, rgba(214,120,120,0.10), rgba(214,120,120,0))",
+          willChange: "transform",
+        }}
       />
 
       {/* BGM 토글 (회색 원 + 흰색 아이콘) */}
@@ -189,7 +192,7 @@ export default function WeddingInvite() {
             이&nbsp;현&nbsp;석
           </h1>
 
-        <div className="text-center mx-3 select-none">
+          <div className="text-center mx-3 select-none">
             <div className="leading-none" style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(40px, 10.5vw, 72px)" }}>
               {mm}
             </div>
@@ -212,10 +215,18 @@ export default function WeddingInvite() {
         </p>
       </section>
 
-      {/* 2) 메인 이미지 */}
+      {/* 2) 메인 이미지 — 첫 화면이므로 eager + high priority */}
       <section className="max-w-md mx-auto px-5">
         <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white">
-          <img src={MAIN_IMG} alt="메인 웨딩 사진" className="w-full h-[48svh] object-cover" loading="lazy" />
+          <img
+            src={MAIN_IMG}
+            alt="메인 웨딩 사진"
+            className="w-full h-[48svh] object-cover"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
+            style={{ contentVisibility: "auto" }}
+          />
         </figure>
       </section>
 
@@ -353,6 +364,8 @@ export default function WeddingInvite() {
                   src={`/images/album/${file}`}
                   alt={`album-${idx}`}
                   loading="lazy"
+                  decoding="async"
+                  fetchPriority="low"
                   className="w-full aspect-square object-cover"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = "none";
@@ -392,7 +405,14 @@ export default function WeddingInvite() {
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-[20px] shadow-sm p-6 bg-white ${className}`} style={{ background: THEME.card }}>
+    <div
+      className={`rounded-[20px] shadow-sm p-6 bg-white ${className}`}
+      style={{
+        background: THEME.card,
+        contentVisibility: "auto",         // 뷰포트 밖 지연 페인트
+        containIntrinsicSize: "600px",     // 자리 확보 (레이아웃 점프 방지)
+      }}
+    >
       {children}
     </div>
   );
@@ -401,7 +421,7 @@ function Divider() {
   return <div className="my-3 h-px" style={{ background: THEME.line }} />;
 }
 
-/** Kakao roughmap embed */
+/** Kakao roughmap embed — 보이기 직전에 로드 */
 function KakaoRoughMap({
   timestamp,
   mapKey,
@@ -414,15 +434,23 @@ function KakaoRoughMap({
   height?: number | string;
 }) {
   const containerId = `daumRoughmapContainer${timestamp}`;
+  const hostRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     const LOADER_CLASS = "daum_roughmap_loader_script";
     const ensureLoader = () =>
       new Promise<void>((resolve) => {
-        if ((window as any).daum?.roughmap?.Lander) { resolve(); return; }
+        if ((window as any).daum?.roughmap?.Lander) {
+          resolve();
+          return;
+        }
         const existing = document.querySelector(`script.${LOADER_CLASS}`);
         if (existing) {
           const iv = setInterval(() => {
-            if ((window as any).daum?.roughmap?.Lander) { clearInterval(iv); resolve(); }
+            if ((window as any).daum?.roughmap?.Lander) {
+              clearInterval(iv);
+              resolve();
+            }
           }, 50);
           return;
         }
@@ -435,21 +463,42 @@ function KakaoRoughMap({
       });
 
     let disposed = false;
-    ensureLoader().then(() => {
-      if (disposed) return;
-      const lander = new (window as any).daum.roughmap.Lander({
-        timestamp,
-        key: mapKey,
-        mapWidth: typeof width === "number" ? `${width}px` : width,
-        mapHeight: typeof height === "number" ? `${height}px` : height,
-      });
-      lander.render();
-    });
+    let observed = false;
 
-    return () => { disposed = true; };
+    const io = new IntersectionObserver(
+      async (entries) => {
+        if (observed || disposed) return;
+        if (!entries[0]?.isIntersecting) return;
+        observed = true;
+        await ensureLoader();
+        if (disposed) return;
+        const lander = new (window as any).daum.roughmap.Lander({
+          timestamp,
+          key: mapKey,
+          mapWidth: typeof width === "number" ? `${width}px` : width,
+          mapHeight: typeof height === "number" ? `${height}px` : height,
+        });
+        lander.render();
+        io.disconnect();
+      },
+      { root: null, rootMargin: "200px 0px", threshold: 0.01 }
+    );
+
+    if (hostRef.current) io.observe(hostRef.current);
+    return () => {
+      disposed = true;
+      io.disconnect();
+    };
   }, [timestamp, mapKey, width, height]);
 
-  return <div id={containerId} className="root_daum_roughmap root_daum_roughmap_landing" />;
+  return (
+    <div
+      ref={hostRef}
+      id={containerId}
+      className="root_daum_roughmap root_daum_roughmap_landing"
+      style={{ containIntrinsicSize: "360px 100%", contentVisibility: "auto" }}
+    />
+  );
 }
 
 /** 연락행 */
