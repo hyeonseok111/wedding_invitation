@@ -9,14 +9,17 @@ const VENUE_NAME = "아펠가모 공덕 라로브홀";
 const VENUE_ADDR = "서울 마포구 마포대로 92 효성해링턴스퀘어 B동 7층";
 const VENUE_TEL = "02-2197-0230";
 
-/* 지도 검색용 키워드(버튼 클릭 시 사용) — 라로브홀 제외 */
+/** 하단 버튼에서 쓸 검색어(라로브홀 제외) */
 const VENUE_SEARCH = "아펠가모 공덕";
 
-/* 카카오 퍼가기(사용자가 준 값 예시) */
-const KAKAO_EMBED_SRC =
-  "https://map.kakao.com/?urlX=489498&urlY=1123000&urlLevel=3&map_type=TYPE_MAP&map_hybrid=false";
-const KAKAO_IMG_SRC =
-  "https://map2.daum.net/map/mapservice?FORMAT=PNG&SCALE=2.5&MX=489498&MY=1123000&S=0&IW=504&IH=310&LANG=0&COORDSTM=WCONGNAMUL&logo=kakao_logo";
+/** 카카오 지도 iframe (사용자가 제공한 좌표) */
+const KAKAO_URL_X = 489498;
+const KAKAO_URL_Y = 1123000;
+const KAKAO_URL_LEVEL = 3;
+const KAKAO_IFRAME_SRC = `https://map.kakao.com/?urlX=${KAKAO_URL_X}&urlY=${KAKAO_URL_Y}&urlLevel=${KAKAO_URL_LEVEL}&map_type=TYPE_MAP&map_hybrid=false`;
+
+/** 카카오 썸네일(혹시 iframe 차단 시 대체로 링크 클릭) */
+const KAKAO_THUMB_SRC = `https://map2.daum.net/map/mapservice?FORMAT=PNG&SCALE=2.5&MX=${KAKAO_URL_X}&MY=${KAKAO_URL_Y}&S=0&IW=504&IH=310&LANG=0&COORDSTM=WCONGNAMUL&logo=kakao_logo`;
 
 const GROOM_LINE = "이영철 · 이경희 의 아들 현석";
 const BRIDE_LINE = "유기만 · 정원경 의 딸 지현";
@@ -36,10 +39,7 @@ const BRIDE_ACCOUNTS = [
 ];
 
 /** index.json 타입 */
-type AlbumIndex = {
-  main: string; // 메인 이미지 파일명
-  album: string[]; // 앨범 파일명 리스트
-};
+type AlbumIndex = { main: string; album: string[] };
 
 export default function WeddingInvite() {
   /** ── BGM (기본 정지) ── */
@@ -80,28 +80,32 @@ export default function WeddingInvite() {
 
   useEffect(() => {
     let canceled = false;
-    const load = async () => {
+    (async () => {
       try {
         const res = await fetch("/images/album/index.json", { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as AlbumIndex;
 
-        // 내림차순 정렬 + 중복 제거
         const sortedUnique = Array.from(
           new Set(
             [...data.album]
               .filter((f) => f && typeof f === "string")
-              .map((f) => f.trim())
+              .map((f) => String(f).trim())
               .filter(Boolean)
           )
         ).sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
 
-        if (!canceled) { setAlbumIndex({ main: data.main, album: sortedUnique }); setAlbumError(null); }
+        if (!canceled) {
+          setAlbumIndex({ main: data.main, album: sortedUnique });
+          setAlbumError(null);
+        }
       } catch {
-        if (!canceled) { setAlbumIndex(null); setAlbumError("앨범 목록(index.json)을 불러오지 못했습니다."); }
+        if (!canceled) {
+          setAlbumIndex(null);
+          setAlbumError("앨범 목록(index.json)을 불러오지 못했습니다.");
+        }
       }
-    };
-    load();
+    })();
     return () => { canceled = true; };
   }, []);
 
@@ -120,7 +124,6 @@ export default function WeddingInvite() {
       <button
         onClick={toggleBgm}
         aria-label={isPlaying ? "배경음악 일시정지" : "배경음악 재생"}
-        title={isPlaying ? "배경음악 일시정지" : "배경음악 재생"}
         aria-pressed={isPlaying}
         className={`fixed left-3 top-3 z-20 w-11 h-11 rounded-full bg-white/95 backdrop-blur shadow flex items-center justify-center border
           ${isPlaying ? "border-rose-200 ring-2 ring-rose-100" : "border-gray-200"}`}
@@ -132,10 +135,16 @@ export default function WeddingInvite() {
 
       {/* 타이틀 */}
       <section className="max-w-md mx-auto px-5 pt-8 pb-3 text-center">
-        <h2 className="tracking-[0.35em] text-[12px] text-gray-800" style={{ fontFamily: `'Noto Serif KR', ui-serif, serif` }}>
+        <h2
+          className="tracking-[0.35em] text-[12px] text-gray-800"
+          style={{ fontFamily: `'Noto Serif KR', ui-serif, serif` }}
+        >
           WEDDING INVITATION
         </h2>
-        <h1 className="mt-2 text-2xl" style={{ fontFamily: `'Noto Serif KR', ui-serif, serif` }}>
+        <h1
+          className="mt-2 text-2xl"
+          style={{ fontFamily: `'Noto Serif KR', ui-serif, serif` }}
+        >
           이현석 &nbsp;&amp;&nbsp; 유지현
         </h1>
       </section>
@@ -143,7 +152,12 @@ export default function WeddingInvite() {
       {/* 메인 이미지 */}
       <section className="max-w-md mx-auto px-4">
         <div className="rounded-2xl overflow-hidden shadow bg-white">
-          <img src={MAIN_IMG} alt="메인 웨딩 사진" className="w-full h-[52svh] object-cover" loading="lazy" />
+          <img
+            src={MAIN_IMG}
+            alt="메인 웨딩 사진"
+            className="w-full h-[52svh] object-cover"
+            loading="lazy"
+          />
         </div>
       </section>
 
@@ -178,8 +192,14 @@ export default function WeddingInvite() {
       {/* 앨범 */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <div className="bg-white rounded-2xl shadow p-5">
-          <h3 className="text-center text-lg tracking-wide mb-4" style={{ color: HIGHLIGHT }}>ALBUM</h3>
-          {albumError && <p className="text-sm text-red-500 text-center mb-3">{albumError}</p>}
+          <h3 className="text-center text-lg tracking-wide mb-4" style={{ color: HIGHLIGHT }}>
+            ALBUM
+          </h3>
+
+          {albumError && (
+            <p className="text-sm text-red-500 text-center mb-3">{albumError}</p>
+          )}
+
           <div className="grid grid-cols-3 gap-3">
             {albumIndex?.album.map((file, idx) => (
               <figure key={`${file}-${idx}`} className="rounded-xl overflow-hidden bg-gray-100">
@@ -188,21 +208,27 @@ export default function WeddingInvite() {
                   alt={`album-${idx}`}
                   loading="lazy"
                   className="w-full h-full object-cover aspect-[4/3]"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; console.warn("이미지 로드 실패:", `/images/album/${file}`); }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                    console.warn("이미지 로드 실패:", `/images/album/${file}`);
+                  }}
                 />
               </figure>
             ))}
           </div>
+
           <p className="text-xs text-gray-500 text-center mt-3">
             앨범 폴더: <code>/public/images/album/</code> · <code>index.json</code>의 파일명을 기준으로 표시(내림차순)
           </p>
         </div>
       </section>
 
-      {/* ───────── 오시는 길 : 카카오 지도 퍼가기 ───────── */}
+      {/* ───────── 오시는 길 : 카카오 지도(iframe) ───────── */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <div className="bg-white rounded-2xl shadow p-6 text-center">
-          <h2 className="text-xl font-semibold mb-2" style={{ color: HIGHLIGHT }}>오시는 길</h2>
+          <h2 className="text-xl font-semibold mb-2" style={{ color: HIGHLIGHT }}>
+            오시는 길
+          </h2>
           <p className="text-lg font-bold">{VENUE_NAME}</p>
           <p className="mt-1 text-gray-700">{VENUE_ADDR}</p>
 
@@ -212,21 +238,29 @@ export default function WeddingInvite() {
               href={`tel:${VENUE_TEL.replace(/[^0-9]/g, "")}`}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm"
             >
-              <PhoneIcon width={16} height={16} /> 안내 전화
+              <PhoneIcon width={16} height={16} />
+              안내 전화
             </a>
           </div>
 
-          {/* 카카오 퍼가기 (이미지→클릭 시 카카오 지도) */}
+          {/* ✅ 인터랙티브 카카오 지도 (핀치 줌/드래그 가능) */}
           <div className="mt-5 rounded-xl overflow-hidden shadow-sm">
-            <a href={KAKAO_EMBED_SRC} target="_blank" rel="noopener noreferrer">
-              <img
-                src={KAKAO_IMG_SRC}
-                alt="카카오 지도"
-                className="w-full h-[320px] object-cover"
-                loading="lazy"
-              />
-            </a>
+            <iframe
+              title="카카오 지도"
+              src={KAKAO_IFRAME_SRC}
+              width="100%"
+              height="320"
+              style={{ border: 0 }}
+              allowFullScreen
+            />
           </div>
+
+          {/* (선택) iframe이 특정 브라우저에서 막힐 경우 대비한 얇은 대체 링크 */}
+          <noscript>
+            <a href={KAKAO_IFRAME_SRC} target="_blank" rel="noopener noreferrer">
+              <img src={KAKAO_THUMB_SRC} alt="카카오 지도" width="100%" height="320" />
+            </a>
+          </noscript>
 
           {/* 하단 앱 버튼 3종 — 검색어는 '아펠가모 공덕' 고정 */}
           <div className="mt-5 grid grid-cols-3 gap-3">
@@ -259,7 +293,7 @@ export default function WeddingInvite() {
               onClick={() =>
                 openWithFallback(
                   `tmap://search?name=${encodeURIComponent(VENUE_SEARCH)}`,
-                  // 티맵 전용 웹이 없어 폴백은 구글맵 검색
+                  // 티맵은 웹 딥링크가 마땅치 않아 구글맵 웹으로 폴백
                   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(VENUE_SEARCH)}`
                 )
               }
@@ -296,22 +330,26 @@ export default function WeddingInvite() {
 function Headphones(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path d="M4 13a8 8 0 1 1 16 0" strokeWidth="1.6" strokeLinecap="round"/>
-      <rect x="3" y="12" width="4" height="7" rx="1.2" strokeWidth="1.6"/>
-      <rect x="17" y="12" width="4" height="7" rx="1.2" strokeWidth="1.6"/>
+      <path d="M4 13a8 8 0 1 1 16 0" strokeWidth="1.6" strokeLinecap="round" />
+      <rect x="3" y="12" width="4" height="7" rx="1.2" strokeWidth="1.6" />
+      <rect x="17" y="12" width="4" height="7" rx="1.2" strokeWidth="1.6" />
     </svg>
   );
 }
+
 function PhoneIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
       <path
-        strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
         d="M22 16.5v3a2 2 0 0 1-2.2 2A19.5 19.5 0 0 1 2.5 4.2 2 2 0 0 1 4.5 2h3a2 2 0 0 1 2 1.7c.12.8.32 1.6.58 2.4a2 2 0 0 1-.44 2.1L9 10a16 16 0 0 0 5 5l.7-1.1a2 2 0 0 1 2.1-.45c.8.26 1.6.46 2.4.58A2 2 0 0 1 22 16.5z"
       />
     </svg>
   );
 }
+
 function SmsIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
@@ -327,13 +365,21 @@ function ContactRow({ label, tel }: { label: string; tel: string }) {
     <div className="flex items-center justify-between">
       <p className="text-[15px]">{label}</p>
       <div className="flex items-center gap-2">
-        <a href={`tel:${digits}`} aria-label="전화 걸기" title="전화 걸기"
-           className="w-9 h-9 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-gray-700">
+        <a
+          href={`tel:${digits}`}
+          aria-label="전화 걸기"
+          title="전화 걸기"
+          className="w-9 h-9 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-gray-700"
+        >
           <PhoneIcon width={18} height={18} />
         </a>
-        <a href={`sms:${digits}`} aria-label="문자 보내기" title="문자 보내기"
-           className="w-9 h-9 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-gray-700"
-           style={{ color: HIGHLIGHT }}>
+        <a
+          href={`sms:${digits}`}
+          aria-label="문자 보내기"
+          title="문자 보내기"
+          className="w-9 h-9 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-gray-700"
+          style={{ color: HIGHLIGHT }}
+        >
           <SmsIcon width={18} height={18} />
         </a>
       </div>
@@ -342,22 +388,39 @@ function ContactRow({ label, tel }: { label: string; tel: string }) {
 }
 
 function CalendarCard({
-  days, cells, highlight, dDay,
-}: { days: string[]; cells: (number | null)[]; highlight: string; dDay: number; }) {
+  days,
+  cells,
+  highlight,
+  dDay,
+}: {
+  days: string[];
+  cells: (number | null)[];
+  highlight: string;
+  dDay: number;
+}) {
   return (
     <section className="max-w-md mx-auto px-5 mt-6">
       <div className="bg-white rounded-2xl shadow p-6">
         <h3 className="text-center text-lg font-medium">12월</h3>
         <div className="grid grid-cols-7 gap-3 text-center text-sm font-semibold mt-3">
-          {days.map((d) => (<div key={d}>{d}</div>))}
+          {days.map((d) => (
+            <div key={d}>{d}</div>
+          ))}
         </div>
         <div className="grid grid-cols-7 gap-3 text-center text-lg mt-2">
           {cells.map((n, i) =>
-            n === null ? <div key={i} /> : (
-              <div key={i}
-                className={`w-10 h-10 mx-auto flex items-center justify-center rounded-full ${n === 7 ? "text-white font-bold" : "text-gray-800"}`}
+            n === null ? (
+              <div key={i} />
+            ) : (
+              <div
+                key={i}
+                className={`w-10 h-10 mx-auto flex items-center justify-center rounded-full ${
+                  n === 7 ? "text-white font-bold" : "text-gray-800"
+                }`}
                 style={n === 7 ? { backgroundColor: highlight } : {}}
-              >{n}</div>
+              >
+                {n}
+              </div>
             )
           )}
         </div>
@@ -397,12 +460,21 @@ function InfoSections({ highlight }: { highlight: string }) {
     </section>
   );
 }
-function InfoBlock({ title, highlight, children }:{
-  title: string; highlight: string; children: React.ReactNode;
+
+function InfoBlock({
+  title,
+  highlight,
+  children,
+}: {
+  title: string;
+  highlight: string;
+  children: React.ReactNode;
 }) {
   return (
     <div>
-      <h4 className="text-base font-semibold mb-1.5" style={{ color: highlight }}>{title}</h4>
+      <h4 className="text-base font-semibold mb-1.5" style={{ color: highlight }}>
+        {title}
+      </h4>
       <p className="text-[15px] leading-7 text-gray-700">{children}</p>
     </div>
   );
@@ -413,7 +485,10 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
   const [open, setOpen] = useState(false);
   return (
     <div className="border rounded-xl bg-white shadow-sm mb-3 overflow-hidden">
-      <button onClick={() => setOpen(v => !v)} className="w-full flex items-center justify-between px-4 py-3 text-left">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left"
+      >
         <span className="text-[15px]">{title}</span>
         <span className="text-xl">{open ? "▾" : "▸"}</span>
       </button>
@@ -423,8 +498,12 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
 }
 
 /* 계좌 리스트(계좌번호 원문 복사) */
-function AccountList({ accounts, onCopy }:{
-  accounts: { bank: string; number: string; holder: string }[]; onCopy: (txt: string) => void;
+function AccountList({
+  accounts,
+  onCopy,
+}: {
+  accounts: { bank: string; number: string; holder: string }[];
+  onCopy: (txt: string) => void;
 }) {
   return (
     <ul className="space-y-3">
@@ -434,7 +513,10 @@ function AccountList({ accounts, onCopy }:{
             <div>{`${a.bank} ${a.number}`}</div>
             <div className="text-gray-500">{a.holder}</div>
           </div>
-          <button onClick={() => onCopy(a.number)} className="shrink-0 rounded-md px-3 py-1 text-sm border border-gray-300">
+          <button
+            onClick={() => onCopy(a.number)}
+            className="shrink-0 rounded-md px-3 py-1 text-sm border border-gray-300"
+          >
             복사
           </button>
         </li>
@@ -444,8 +526,6 @@ function AccountList({ accounts, onCopy }:{
 }
 
 /* ───────── 오시는 길 하단 버튼/아이콘/폴백 로직 ───────── */
-
-/** 앱 스킴 시도 → 실패 시 웹으로 폴백 */
 function openWithFallback(appUrl: string, webUrl: string) {
   const start = Date.now();
   const t = setTimeout(() => {
@@ -465,8 +545,14 @@ function openWithFallback(appUrl: string, webUrl: string) {
 
 /** 공통 앱 버튼 */
 function AppButton({
-  label, children, onClick,
-}: { label: string; children: React.ReactNode; onClick: () => void; }) {
+  label,
+  children,
+  onClick,
+}: {
+  label: string;
+  children: React.ReactNode;
+  onClick: () => void;
+}) {
   return (
     <button
       onClick={onClick}
@@ -478,7 +564,7 @@ function AppButton({
   );
 }
 
-/** 간단 로고 아이콘 */
+/** 간단 로고 아이콘들 */
 function NaverIcon(props: React.HTMLAttributes<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
@@ -491,7 +577,10 @@ function KakaoIcon(props: React.HTMLAttributes<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" {...props}>
       <rect width="24" height="24" rx="4" fill="#FFE812" />
-      <path d="M12 6.5c-3.3 0-6 2-6 4.6 0 1.7 1.1 3.2 2.9 4l-.6 2.4a.5.5 0 0 0 .8.5l2.7-1.7c3.3 0 6-2.1 6-4.7S15.3 6.5 12 6.5z" fill="#381E1F" />
+      <path
+        d="M12 6.5c-3.3 0-6 2-6 4.6 0 1.7 1.1 3.2 2.9 4l-.6 2.4a.5.5 0 0 0 .8.5l2.7-1.7c.07 0 .27.1.2.1 3.3 0 6-2.1 6-4.7S15.3 6.5 12 6.5z"
+        fill="#381E1F"
+      />
     </svg>
   );
 }
