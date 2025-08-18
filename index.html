@@ -2,11 +2,47 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>이현석 & 유지현 결혼합니다</title>
-  </head>
-  <body>
-    <div id="root"></div>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+
+    <!-- 브라우저 상단 색상 / 모바일 최적화 -->
+    <meta name="theme-color" content="#D67878" />
+    <meta name="color-scheme" content="light only" />
+
+    <title>이현석 · 유지현 모바일 청첩장</title>
+    <meta
+      name="description"
+      content="2025년 12월 7일(일) 15:30 · 아펠가모 공덕 라로브홀"
+    />
+
+    <!-- Favicons (옵션: 경로 맞게 교체하세요) -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Google Fonts: 제목용 Noto Serif KR -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Pretendard: 본문용 -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/pretendard/dist/web/static/pretendard.css"
+    />
+
+    <!-- BGM 파일 사전 로딩 (선택 사항) -->
+    <link rel="preload" href="/bgm/romantic-melody.mp3" as="audio" />
+
+    <!-- Vite 엔트리 -->
     <script type="module" src="/src/main.tsx"></script>
+  </head>
+  <body class="bg-[#FFF7F1] text-gray-900">
+    <div id="root"></div>
   </body>
 </html>
