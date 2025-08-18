@@ -13,19 +13,17 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard/dist/web/static/pretendard.css" />
 
-    <!-- (선택) BGM 프리로드 -->
-    <link rel="preload" href="/bgm/romantic-melody.mp3" as="audio" />
+    <!-- 선택: 메인 이미지가 정적 경로라면 프리로드 가능
+    <link rel="preload" as="image" href="/images/album/Bloom_25_06_13_073904" />
+    -->
   </head>
   <body class="bg-[#FFF7F1] text-gray-900">
     <div id="root">로딩중…</div>
-
-    <!-- Vite entry: 꼭 상대경로! -->
     <script type="module" src="src/main.tsx"></script>
   </body>
 </html>
