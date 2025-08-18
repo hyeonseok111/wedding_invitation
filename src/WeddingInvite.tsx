@@ -12,7 +12,7 @@ const VENUE_TEL = "02-2197-0230";
 /** 하단 앱 버튼 검색어(라로브홀 제외) */
 const VENUE_SEARCH = "아펠가모 공덕";
 
-/** ▼ 카카오 퍼가기 값 (네가 제공한 값) */
+/** ▼ 카카오 “지도 퍼가기(roughmap)” 값 — 네가 제공한 최신 값 사용 */
 const KAKAO_ROUGHMAP_TIMESTAMP = "1755526725995";
 const KAKAO_ROUGHMAP_KEY = "78iir7azr4f";
 const KAKAO_MAP_HEIGHT = 360;
@@ -37,15 +37,20 @@ function KakaoRoughMap({
   useEffect(() => {
     let disposed = false;
 
+    // 1) index.html에 넣은 roughmap 로더가 준비될 때까지 대기
     const waitForLoader = () =>
       new Promise<void>((resolve) => {
         const ok = () => (window as any).daum?.roughmap?.Lander;
         if (ok()) return resolve();
         const iv = setInterval(() => {
-          if (ok()) { clearInterval(iv); resolve(); }
+          if (ok()) {
+            clearInterval(iv);
+            resolve();
+          }
         }, 50);
       });
 
+    // 2) 컨테이너 DOM이 생길 때까지 대기
     const waitForContainer = () =>
       new Promise<void>((resolve) => {
         const tick = () => {
@@ -62,8 +67,9 @@ function KakaoRoughMap({
 
       const root = document.getElementById(containerId);
       if (!root) return;
-      root.innerHTML = ""; // 재렌더 안전
+      root.innerHTML = ""; // 재렌더 시 깨끗이
 
+      // 3) 퍼가기 지도 그리기
       new (window as any).daum.roughmap.Lander({
         timestamp,
         key: mapKey,
@@ -71,7 +77,9 @@ function KakaoRoughMap({
         mapHeight: typeof height === "number" ? `${height}px` : height,
       }).render();
 
-      (root.style as any).touchAction = "auto"; // 핀치/드래그 허용
+      // 4) 제스처 허용(일부 CSS가 가로채는 케이스 방지)
+      (root.style as any).touchAction = "auto";
+      (root.style as any).pointerEvents = "auto";
     })();
 
     return () => {
@@ -81,6 +89,7 @@ function KakaoRoughMap({
     };
   }, [timestamp, mapKey, width, height, containerId]);
 
+  // ✅ 컨테이너 id는 "daumRoughmapContainer{timestamp}" 여야 한다 (퍼가기 규칙)
   return (
     <div
       id={containerId}
@@ -89,6 +98,7 @@ function KakaoRoughMap({
         width: typeof width === "number" ? `${width}px` : width,
         height: typeof height === "number" ? `${height}px` : height,
         touchAction: "auto",
+        pointerEvents: "auto",
       }}
     />
   );
@@ -486,7 +496,7 @@ function KakaoIcon(props: React.HTMLAttributes<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" {...props}>
       <rect width="24" height="24" rx="4" fill="#FFE812" />
-      <path d="M12 6.5c-3.3 0-6 2-6 4.6 0 1.7 1.1 3.2 2.9 4l-.6 2.4a.5.5 0 0 0 .8.5l2.7-1.7c3.3 0 6-2.1 6-4.7S15.3 6.5 12 6.5z" fill="#381E1F" />
+      <path d="M12 6.5c-3.3 0-6 2-6 4.6 0 1.7 1.1 3.2 2.9 4l-.6 2.4a.5.5 0 0 0 .8.5l2.7-1.7c.07 0 .27.1.2.1 3.3 0 6-2.1 6-4.7S15.3 6.5 12 6.5z" fill="#381E1F" />
     </svg>
   );
 }
