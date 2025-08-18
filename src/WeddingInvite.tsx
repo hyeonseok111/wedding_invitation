@@ -1,15 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-/** ───────── 고정 텍스트/색상/테마 ───────── */
+/** ───────── 고정 텍스트/테마 ───────── */
 const BGM_SRC = "/bgm/romantic-melody.mp3";
 const THEME = {
   bg: "#FFF7F1",
   card: "#FFFFFF",
-  ink: "#1f2937",
+  ink: "#111111",
   sub: "#6b7280",
   line: "#ececec",
-  hl: "#D67878", // 메인 포인트
-  hlSoft: "#FBE6E6",
+  hl: "#D67878",
 };
 
 const WEDDING_ISO = "2025-12-07T15:30:00+09:00";
@@ -21,15 +20,15 @@ const VENUE_TEL = "02-2197-0230";
 const KAKAO_EMBED_TIMESTAMP = "1755523431572";
 const KAKAO_EMBED_KEY = "7m3ejw8zpmp";
 
-/** 하단 앱 버튼 검색어(“아펠가모 공덕”만 사용) */
+/** 앱 버튼 통합 검색어(“아펠가모 공덕” 고정) */
 const MAP_QUERY = "아펠가모 공덕";
 
+/** 연락처/계좌 */
 const GROOM_LINE = "이영철 · 이경희 의 아들 현석";
 const BRIDE_LINE = "유기만 · 정원경 의 딸 지현";
 const GROOM_TEL = "010-4100-5960";
 const BRIDE_TEL = "010-3350-7890";
 
-// 계좌(신랑/신부 3개씩)
 const GROOM_ACCOUNTS = [
   { bank: "우리은행", number: "1002-743-669917", holder: "이현석" },
   { bank: "국민", number: "000-000-000000", holder: "이영철" },
@@ -44,16 +43,18 @@ const BRIDE_ACCOUNTS = [
 /** index.json 타입 */
 type AlbumIndex = { main: string; album: string[] };
 
-/** 유틸: 오늘/이벤트 자정 기준 일수 계산 */
+/** 유틸 */
+const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
 function daysUntil(iso: string) {
   const event = new Date(iso);
-  const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const startOf = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const today = new Date();
   return Math.ceil((startOf(event) - startOf(today)) / 86400000);
 }
 
 export default function WeddingInvite() {
-  /** ── BGM (기본 정지, 접근성) ── */
+  /** ── BGM ── */
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const toggleBgm = async () => {
@@ -63,28 +64,30 @@ export default function WeddingInvite() {
       try {
         await a.play();
         setIsPlaying(true);
-      } catch {
-        // 모바일 정책으로 실패 가능
-      }
+      } catch {}
     } else {
       a.pause();
       setIsPlaying(false);
     }
   };
 
-  /** ── D-day (자정 갱신) ── */
+  /** ── 날짜 파생 ── */
+  const eventDate = new Date(WEDDING_ISO);
+  const mm = pad2(eventDate.getMonth() + 1);
+  const dd = pad2(eventDate.getDate());
+
+  /** ── D-day (자정 자동 갱신) ── */
   const [dDay, setDDay] = useState(() => daysUntil(WEDDING_ISO));
   useEffect(() => {
-    // 다음 자정까지 타이머
     const now = new Date();
     const nextMidnight = new Date(now);
     nextMidnight.setHours(24, 0, 0, 0);
+    const toMidnight = nextMidnight.getTime() - now.getTime();
     const t = setTimeout(() => {
       setDDay(daysUntil(WEDDING_ISO));
-      // 이후 하루마다
-      const i = setInterval(() => setDDay(daysUntil(WEDDING_ISO)), 24 * 60 * 60 * 1000);
+      const i = setInterval(() => setDDay(daysUntil(WEDDING_ISO)), 86400000);
       return () => clearInterval(i);
-    }, nextMidnight.getTime() - now.getTime());
+    }, toMidnight);
     return () => clearTimeout(t);
   }, []);
 
@@ -103,10 +106,9 @@ export default function WeddingInvite() {
   /** ── index.json 로드 ── */
   const [albumIndex, setAlbumIndex] = useState<AlbumIndex | null>(null);
   const [albumError, setAlbumError] = useState<string | null>(null);
-
   useEffect(() => {
     let canceled = false;
-    const load = async () => {
+    (async () => {
       try {
         const res = await fetch("/images/album/index.json", { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -131,8 +133,7 @@ export default function WeddingInvite() {
           setAlbumError("앨범 목록(index.json)을 불러오지 못했습니다.");
         }
       }
-    };
-    load();
+    })();
     return () => {
       canceled = true;
     };
@@ -150,12 +151,13 @@ export default function WeddingInvite() {
     } catch {}
   };
 
+  /** ── 렌더 ── */
   return (
     <main
-      className="min-h-screen text-gray-900 font-sans relative"
+      className="min-h-screen font-sans"
       style={{ background: THEME.bg, color: THEME.ink }}
     >
-      {/* 상단 그라데이션 헤더 */}
+      {/* 상단 그라데이션 */}
       <div
         className="fixed inset-x-0 top-0 h-28 pointer-events-none -z-0"
         style={{
@@ -164,76 +166,135 @@ export default function WeddingInvite() {
         }}
       />
 
-      {/* 좌상단 BGM 토글 */}
+      {/* BGM 토글 버튼 (회색 원형 + 흰색 아이콘) */}
       <button
         onClick={toggleBgm}
         aria-label={isPlaying ? "배경음악 일시정지" : "배경음악 재생"}
         aria-pressed={isPlaying}
-        title={isPlaying ? "배경음악 일시정지" : "배경음악 재생"}
-        className={`fixed left-4 top-4 z-20 w-12 h-12 rounded-full bg-white/95 backdrop-blur shadow-md flex items-center justify-center border transition-all
-          ${isPlaying ? "border-rose-200 ring-2 ring-rose-100" : "border-gray-200"}`}
-        style={{ color: isPlaying ? THEME.hl : THEME.sub }}
+        className="fixed right-4 top-4 z-20 w-12 h-12 rounded-full shadow-md flex items-center justify-center transition active:scale-95"
+        style={{ background: "#8F8F8F", color: "#fff" }}
       >
-        <Headphones width={22} height={22} />
+        {isPlaying ? <SpeakerOn width={22} height={22} /> : <SpeakerOff width={22} height={22} />}
       </button>
       <audio ref={audioRef} src={BGM_SRC} preload="none" loop className="hidden" />
 
-      {/* 타이틀 */}
-      <section className="max-w-md mx-auto px-6 pt-10 pb-2 text-center">
-        <h2
-          className="tracking-[0.28em] text-[11px] text-gray-700"
-          style={{ fontFamily: "'Noto Serif KR', ui-serif, serif" }}
+      {/* 대형 타이포 배너 */}
+      <section className="max-w-md mx-auto px-5 pt-10 pb-6">
+        <div className="flex items-end justify-between">
+          <h1
+            className="tracking-[0.2em]"
+            style={{
+              fontFamily: "'Noto Serif KR', ui-serif, serif",
+              fontSize: "clamp(24px, 5.5vw, 36px)",
+              fontWeight: 500,
+            }}
+          >
+            이&nbsp;현&nbsp;석
+          </h1>
+
+          <div className="text-center mx-3 select-none">
+            <div
+              className="leading-none"
+              style={{
+                fontFamily: "'Noto Serif KR', ui-serif, serif",
+                fontSize: "clamp(44px, 12vw, 88px)",
+                letterSpacing: "0.02em",
+              }}
+            >
+              {mm}
+            </div>
+            <div
+              className="w-10 mx-auto my-1 border-t"
+              style={{ borderColor: "#DADADA" }}
+            />
+            <div
+              className="leading-none"
+              style={{
+                fontFamily: "'Noto Serif KR', ui-serif, serif",
+                fontSize: "clamp(44px, 12vw, 88px)",
+                letterSpacing: "0.02em",
+              }}
+            >
+              {dd}
+            </div>
+          </div>
+
+          <h1
+            className="tracking-[0.2em] text-right"
+            style={{
+              fontFamily: "'Noto Serif KR', ui-serif, serif",
+              fontSize: "clamp(24px, 5.5vw, 36px)",
+              fontWeight: 500,
+            }}
+          >
+            유&nbsp;지&nbsp;현
+          </h1>
+        </div>
+
+        <p
+          className="mt-3 text-center text-gray-600"
+          style={{ fontSize: "clamp(12px, 2.8vw, 14px)" }}
         >
-          WEDDING&nbsp;INVITATION
-        </h2>
-        <h1
-          className="mt-2 text-[28px] leading-tight"
-          style={{ fontFamily: "'Noto Serif KR', ui-serif, serif" }}
-        >
-          이현석 <span className="text-gray-400">·</span> 유지현
-        </h1>
-        <p className="mt-2 text-[13px] text-gray-600">
-          2025.12.07 SUN 15:30 · {VENUE_NAME}
+          2025년 12월 7일 일요일 15:30 · {VENUE_NAME}
         </p>
       </section>
 
       {/* 메인 이미지 */}
       <section className="max-w-md mx-auto px-5">
-        <figure
-          className="rounded-3xl overflow-hidden shadow-lg bg-white"
-          aria-label="웨딩 메인 사진"
-        >
+        <figure className="rounded-[28px] overflow-hidden shadow-lg bg-white">
           <img
             src={MAIN_IMG}
             alt="메인 웨딩 사진"
-            className="w-full h-[54svh] object-cover"
+            className="w-full h-[60svh] object-cover"
             loading="lazy"
           />
         </figure>
       </section>
 
+      {/* 시/인용 섹션 (선택) */}
+      <section className="max-w-md mx-auto px-5 mt-10">
+        <Card className="text-center p-8">
+          <p
+            className="text-gray-800"
+            style={{
+              fontFamily: "'Noto Serif KR', ui-serif, serif",
+              fontSize: "clamp(18px, 4.2vw, 24px)",
+              lineHeight: 1.9,
+            }}
+          >
+            장담하건대, 세상이 다 겨울이어도<br />
+            우리 사랑은 늘봄처럼 따뜻하고<br />
+            간혹, 여름처럼 뜨거울 겁니다
+            <br />
+            <span className="text-gray-500" style={{ fontSize: "0.9em" }}>
+              – 이수동, &lt;사랑가&gt; –
+            </span>
+          </p>
+        </Card>
+      </section>
+
       {/* 초대 문구 */}
       <section className="max-w-md mx-auto px-5 mt-6">
-        <div
-          className="rounded-3xl shadow p-6 text-center"
-          style={{ background: THEME.card }}
-        >
-          <div className="inline-flex items-center gap-2">
-            <Dot /> <h3 className="text-[12px] tracking-[0.35em] text-gray-500">INVITATION</h3> <Dot />
-          </div>
-
+        <div className="rounded-[28px] shadow p-8 text-center bg-white">
+          <h3
+            className="tracking-[0.35em] text-gray-500"
+            style={{ fontSize: "clamp(12px, 2.8vw, 14px)" }}
+          >
+            INVITATION
+          </h3>
+      
           <div
-            className="mt-5 space-y-3 leading-[1.9] text-[15.5px] text-gray-800"
-            style={{ fontFamily: "'Pretendard', ui-sans-serif, system-ui" }}
+            className="mt-5 text-gray-900"
+            style={{ fontSize: "clamp(17px, 3.9vw, 22px)", lineHeight: 1.9 }}
           >
             <p>사랑이 봄처럼 시작되어</p>
-            <p>겨울의 약속으로 이어집니다.</p>
-            <p>하루하루의 마음이 저희의 계절을 만들었으니</p>
-            <p>함께 오셔서 따뜻히 축복해 주시면 감사하겠습니다.</p>
+            <p className="mt-2">겨울의 약속으로 이어집니다.</p>
+            <p className="mt-2">하루하루의 마음이 저희의 계절을 만들었으니</p>
+            <p className="mt-2">함께 오셔서 따뜻히 축복해 주시면 감사하겠습니다.</p>
           </div>
-
+      
           <div className="mt-6 text-[13px] text-gray-600">
-            2025년 12월 7일 일요일 오후 3시 30분 · {VENUE_NAME}
+            2025년 12월 7일 일요일 오후 3시 30분 · 아펠가모 공덕 라로브홀
           </div>
         </div>
       </section>
@@ -259,8 +320,8 @@ export default function WeddingInvite() {
       <section className="max-w-md mx-auto px-5 mt-6">
         <Card>
           <h3
-            className="text-center text-[18px] tracking-wide mb-3 font-semibold"
-            style={{ color: THEME.hl }}
+            className="text-center font-semibold mb-3"
+            style={{ color: THEME.hl, fontSize: "clamp(16px,4.5vw,18px)" }}
           >
             ALBUM
           </h3>
@@ -295,19 +356,22 @@ export default function WeddingInvite() {
         </Card>
       </section>
 
-      {/* ───────── 오시는 길 (카카오 지도) ───────── */}
+      {/* 오시는 길 */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <Card className="text-center">
           <h2
-            className="text-[18px] font-semibold mb-1.5"
-            style={{ color: THEME.hl }}
+            className="font-semibold mb-1.5"
+            style={{ color: THEME.hl, fontSize: "clamp(16px,4.5vw,18px)" }}
           >
             오시는 길
           </h2>
-          <p className="text-[16px] font-bold">{VENUE_NAME}</p>
-          <p className="mt-1 text-[14px] text-gray-700">{VENUE_ADDR}</p>
+          <p className="font-bold" style={{ fontSize: "clamp(15px,4vw,16px)" }}>
+            {VENUE_NAME}
+          </p>
+          <p className="mt-1 text-gray-700" style={{ fontSize: "clamp(13px,3.2vw,14px)" }}>
+            {VENUE_ADDR}
+          </p>
 
-          {/* 안내 전화 버튼 */}
           <div className="mt-3">
             <a
               href={`tel:${VENUE_TEL.replace(/[^0-9]/g, "")}`}
@@ -315,15 +379,17 @@ export default function WeddingInvite() {
               style={{
                 background: THEME.ink,
                 color: "#fff",
-                borderColor: "#0000",
+                borderColor: "transparent",
               }}
             >
               <PhoneIcon width={16} height={16} /> 안내 전화
             </a>
           </div>
 
-          {/* 실제 카카오 지도 */}
-          <div className="mt-5 rounded-2xl overflow-hidden shadow-sm border" style={{ borderColor: THEME.line }}>
+          <div
+            className="mt-5 rounded-2xl overflow-hidden shadow-sm border"
+            style={{ borderColor: THEME.line }}
+          >
             <KakaoRoughMap
               timestamp={KAKAO_EMBED_TIMESTAMP}
               mapKey={KAKAO_EMBED_KEY}
@@ -332,7 +398,6 @@ export default function WeddingInvite() {
             />
           </div>
 
-          {/* 하단 앱 버튼 3종 — 검색어는 “아펠가모 공덕”만 */}
           <div className="mt-5 grid grid-cols-3 gap-3">
             <AppButton
               label="네이버 지도"
@@ -380,8 +445,8 @@ export default function WeddingInvite() {
       <section className="max-w-md mx-auto px-5 mt-6 pb-20">
         <Card>
           <h2
-            className="text-center text-[18px] font-semibold mb-3"
-            style={{ color: THEME.hl }}
+            className="text-center font-semibold mb-3"
+            style={{ color: THEME.hl, fontSize: "clamp(16px,4.5vw,18px)" }}
           >
             마음을 전하는 곳
           </h2>
@@ -400,7 +465,7 @@ export default function WeddingInvite() {
   );
 }
 
-/* ───────── 공통 프리미티브 ───────── */
+/* ───────── 공통 컴포넌트 ───────── */
 
 function Card({
   children,
@@ -411,29 +476,17 @@ function Card({
 }) {
   return (
     <div
-      className={`rounded-3xl shadow p-5 ${className}`}
+      className={`rounded-[28px] shadow p-6 bg-white ${className}`}
       style={{ background: THEME.card }}
     >
       {children}
     </div>
   );
 }
-
 function Divider() {
   return <div className="my-3 h-px" style={{ background: THEME.line }} />;
 }
 
-function Dot() {
-  return (
-    <span
-      className="inline-block w-1.5 h-1.5 rounded-full"
-      style={{ background: THEME.hl }}
-      aria-hidden
-    />
-  );
-}
-
-/** 카카오 roughmap 퍼가기: 퍼가기 스크립트를 동적으로 로드하고 랜더러 실행 */
 function KakaoRoughMap({
   timestamp,
   mapKey,
@@ -446,10 +499,8 @@ function KakaoRoughMap({
   height?: number | string;
 }) {
   const containerId = `daumRoughmapContainer${timestamp}`;
-
   useEffect(() => {
     const LOADER_CLASS = "daum_roughmap_loader_script";
-
     const ensureLoader = () =>
       new Promise<void>((resolve) => {
         if ((window as any).daum?.roughmap?.Lander) {
@@ -499,38 +550,7 @@ function KakaoRoughMap({
   );
 }
 
-/** 헤드폰 아이콘 */
-function Headphones(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path d="M4 13a8 8 0 1 1 16 0" strokeWidth="1.6" strokeLinecap="round" />
-      <rect x="3" y="12" width="4" height="7" rx="1.2" strokeWidth="1.6" />
-      <rect x="17" y="12" width="4" height="7" rx="1.2" strokeWidth="1.6" />
-    </svg>
-  );
-}
-
-function PhoneIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M22 16.5v3a2 2 0 0 1-2.2 2A19.5 19.5 0 0 1 2.5 4.2 2 2 0 0 1 4.5 2h3a2 2 0 0 1 2 1.7c.12.8.32 1.6.58 2.4a2 2 0 0 1-.44 2.1L9 10a16 16 0 0 0 5 5l.7-1.1a2 2 0 0 1 2.1-.45c.8.26 1.6.46 2.4.58A2 2 0 0 1 22 16.5z"
-      />
-    </svg>
-  );
-}
-function SmsIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <rect x="3" y="4" width="18" height="14" rx="3" strokeWidth="1.8" />
-      <path d="M7 9h10M7 13h6" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
+/** 연락행 */
 function ContactRow({ label, tel }: { label: string; tel: string }) {
   const digits = tel.replace(/[^0-9]/g, "");
   return (
@@ -560,6 +580,7 @@ function ContactRow({ label, tel }: { label: string; tel: string }) {
   );
 }
 
+/** 달력 카드 */
 function CalendarCard({
   days,
   cells,
@@ -577,13 +598,24 @@ function CalendarCard({
   return (
     <section className="max-w-md mx-auto px-5 mt-6">
       <Card>
-        <h3 className="text-center text-[18px] font-medium">12월</h3>
-        <div className="grid grid-cols-7 gap-3 text-center text-[12.5px] font-semibold mt-3 text-gray-600">
+        <h3
+          className="text-center font-medium"
+          style={{ fontSize: "clamp(18px,4.5vw,22px)" }}
+        >
+          12월
+        </h3>
+        <div
+          className="grid grid-cols-7 gap-3 text-center text-gray-600 mt-3"
+          style={{ fontSize: "clamp(12px,3vw,14px)" }}
+        >
           {days.map((d) => (
             <div key={d}>{d}</div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-3 text-center text-[15px] mt-2">
+        <div
+          className="grid grid-cols-7 gap-3 text-center mt-2"
+          style={{ fontSize: "clamp(16px,4.5vw,20px)" }}
+        >
           {cells.map((n, i) =>
             n === null ? (
               <div key={i} />
@@ -600,14 +632,18 @@ function CalendarCard({
             )
           )}
         </div>
-        <p className="mt-5 text-center text-[15px]" style={{ color: highlight }}>
-          이현석 ❤ 유지현 의 결혼식&nbsp;{label}
+        <p
+          className="mt-5 text-center"
+          style={{ color: highlight, fontSize: "clamp(15px,4vw,18px)" }}
+        >
+          이현석 ❤ 유지현 의 결혼식 {label}
         </p>
       </Card>
     </section>
   );
 }
 
+/** 안내 섹션 */
 function InfoSections({ highlight }: { highlight: string }) {
   return (
     <section className="max-w-md mx-auto px-5 mt-6">
@@ -636,7 +672,6 @@ function InfoSections({ highlight }: { highlight: string }) {
     </section>
   );
 }
-
 function InfoBlock({
   title,
   highlight,
@@ -648,19 +683,27 @@ function InfoBlock({
 }) {
   return (
     <div>
-      <h4 className="text-[15px] font-semibold mb-1.5" style={{ color: highlight }}>
+      <h4
+        className="font-semibold mb-1.5"
+        style={{ color: highlight, fontSize: "clamp(15px,4vw,16px)" }}
+      >
         {title}
       </h4>
-      <p className="text-[14.5px] leading-7 text-gray-700">{children}</p>
+      <p className="text-gray-700" style={{ fontSize: "clamp(14px,3.6vw,15px)", lineHeight: 1.8 }}>
+        {children}
+      </p>
     </div>
   );
 }
 
-/* 심플 아코디언 */
+/** 아코디언 */
 function Accordion({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border rounded-2xl bg-white shadow-sm mb-3 overflow-hidden" style={{ borderColor: THEME.line }}>
+    <div
+      className="border rounded-2xl bg-white shadow-sm mb-3 overflow-hidden"
+      style={{ borderColor: THEME.line }}
+    >
       <button
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center justify-between px-4 py-3 text-left"
@@ -674,8 +717,6 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
     </div>
   );
 }
-
-/* 계좌 리스트 */
 function AccountList({
   accounts,
   onCopy,
@@ -708,49 +749,51 @@ function AccountList({
   );
 }
 
-/* ───────── 오시는 길 하단 버튼/아이콘/폴백 로직 ───────── */
-
-/** 앱 스킴 시도 → 실패 시 웹으로 폴백 */
-function openWithFallback(appUrl: string, webUrl: string) {
-  const start = Date.now();
-  const t = setTimeout(() => {
-    if (Date.now() - start < 1500) window.location.href = webUrl;
-  }, 800);
-
-  const iframe = document.createElement("iframe");
-  iframe.style.display = "none";
-  iframe.src = appUrl;
-  document.body.appendChild(iframe);
-
-  setTimeout(() => {
-    clearTimeout(t);
-    if (document.body.contains(iframe)) document.body.removeChild(iframe);
-  }, 2500);
-}
-
-/** 하단 앱 버튼 공통 */
-function AppButton({
-  label,
-  children,
-  onClick,
-}: {
-  label: string;
-  children: React.ReactNode;
-  onClick: () => void;
-}) {
+/** 아이콘들 */
+/** 스피커 ON (파형) */
+function SpeakerOn(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <button
-      onClick={onClick}
-      className="w-full h-12 rounded-xl bg-white border shadow-sm flex items-center justify-center gap-2 text-[13.5px] font-medium transition active:scale-[0.98]"
-      style={{ borderColor: THEME.line }}
-    >
-      {children}
-      <span>{label}</span>
-    </button>
+    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+      {/* 스피커 몸체 */}
+      <path d="M11 5.5c0-.6-.7-.9-1.1-.5L6.8 8H4.5A1.5 1.5 0 0 0 3 9.5v5A1.5 1.5 0 0 0 4.5 16H6.8l3.1 3c.4.4 1.1.1 1.1-.5V5.5z"/>
+      {/* 파형 두 줄 */}
+      <path d="M15.5 8.5a1 1 0 0 1 1.4 0 5 5 0 0 1 0 7 1 1 0 1 1-1.4-1.4 3 3 0 0 0 0-4.2 1 1 0 0 1 0-1.4z"/>
+      <path d="M18.2 6.3a1 1 0 0 1 1.4 0 8.5 8.5 0 0 1 0 12 1 1 0 1 1-1.4-1.4 6.5 6.5 0 0 0 0-9.2 1 1 0 0 1 0-1.4z"/>
+    </svg>
   );
 }
 
-/** 간단 로고 아이콘들 */
+/** 스피커 OFF (X) */
+function SpeakerOff(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+      {/* 스피커 몸체 */}
+      <path d="M11 5.5c0-.6-.7-.9-1.1-.5L6.8 8H4.5A1.5 1.5 0 0 0 3 9.5v5A1.5 1.5 0 0 0 4.5 16H6.8l3.1 3c.4.4 1.1.1 1.1-.5V5.5z"/>
+      {/* 음소거 X */}
+      <path d="M15.2 9.2a.9.9 0 0 1 1.3 0l1.0 1.0 1.0-1.0a.9.9 0 1 1 1.3 1.3l-1.0 1.0 1.0 1.0a.9.9 0 1 1-1.3 1.3l-1.0-1.0-1.0 1.0a.9.9 0 1 1-1.3-1.3l1.0-1.0-1.0-1.0a.9.9 0 0 1 0-1.3z"/>
+    </svg>
+  );
+}
+function PhoneIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <path
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M22 16.5v3a2 2 0 0 1-2.2 2A19.5 19.5 0 0 1 2.5 4.2 2 2 0 0 1 4.5 2h3a2 2 0 0 1 2 1.7c.12.8.32 1.6.58 2.4a2 2 0 0 1-.44 2.1L9 10a16 16 0 0 0 5 5l.7-1.1a2 2 0 0 1 2.1-.45c.8.26 1.6.46 2.4.58A2 2 0 0 1 22 16.5z"
+      />
+    </svg>
+  );
+}
+function SmsIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <rect x="3" y="4" width="18" height="14" rx="3" strokeWidth="1.8" />
+      <path d="M7 9h10M7 13h6" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
 function NaverIcon(props: React.HTMLAttributes<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
@@ -778,4 +821,22 @@ function TmapIcon(props: React.HTMLAttributes<SVGSVGElement>) {
       <circle cx="12" cy="12" r="2.2" fill="#E31E2D" />
     </svg>
   );
+}
+
+/** 앱 스킴 시도 → 실패 시 웹 폴백 */
+function openWithFallback(appUrl: string, webUrl: string) {
+  const start = Date.now();
+  const t = setTimeout(() => {
+    if (Date.now() - start < 1500) window.location.href = webUrl;
+  }, 800);
+
+  const iframe = document.createElement("iframe");
+  iframe.style.display = "none";
+  iframe.src = appUrl;
+  document.body.appendChild(iframe);
+
+  setTimeout(() => {
+    clearTimeout(t);
+    if (document.body.contains(iframe)) document.body.removeChild(iframe);
+  }, 2500);
 }
