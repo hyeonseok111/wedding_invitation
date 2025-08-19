@@ -335,7 +335,7 @@ export default function WeddingInvite() {
             <img
               src="/images/album/woody_25_06_13_069994.JPG"
               alt="우디 사진"
-              className="absolute inset-0 w-full h-full object-contain"   {/* ← 변경 */}
+              className="absolute inset-0 w-full h-full object-contain"
               loading="lazy"
               decoding="async"
               fetchPriority="low"
