@@ -64,35 +64,60 @@ function formatKoreanDateTime(iso: string) {
 }
 
 /** ───────── 스크롤 리빌(살짝 위로 떠오르듯) ───────── */
-function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+function Reveal({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   const ref = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+
+    // 모션 최소화 환경이면 애니메이션 없이 바로 노출
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) {
+      el.style.opacity = "1";
+      el.style.transform = "none";
+      el.style.filter = "none";
+      return;
+    }
+
     const io = new IntersectionObserver(
       (ents) => {
         ents.forEach((e) => {
           if (e.isIntersecting) {
             el.style.opacity = "1";
             el.style.transform = "translateY(0)";
+            el.style.filter = "blur(0px)";
             io.unobserve(el);
           }
         });
       },
-      { rootMargin: "0px 0px -10% 0px", threshold: 0.12 }
+      { rootMargin: "0px 0px -10% 0px", threshold: 0.1 }
     );
+
     io.observe(el);
     return () => io.disconnect();
   }, []);
+
   return (
     <div
       ref={ref}
       className={className}
       style={{
         opacity: 0,
-        transform: "translateY(8px)",
-        transition: "opacity .45s ease, transform .45s ease",
-        willChange: "transform, opacity",
+        transform: "translateY(14px)",
+        filter: "blur(2px)",
+        transition:
+          "opacity .6s cubic-bezier(.22,.61,.36,1), transform .6s cubic-bezier(.22,.61,.36,1), filter .6s ease",
+        willChange: "transform, opacity, filter",
       }}
     >
       {children}
@@ -262,23 +287,39 @@ export default function WeddingInvite() {
       {/* 2) 메인 이미지 – 사진 전체 보이도록(object-contain) */}
       <Reveal>
         <section className="max-w-md mx-auto px-5">
-          <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white relative h-[48svh]">
-            <div className="absolute inset-0 animate-pulse"
-                 style={{ background:"linear-gradient(90deg, #f5ece7 25%, #f0e6e0 37%, #f5ece7 63%)", backgroundSize:"400% 100%", opacity: mainLoaded ? 0 : 1, transition: "opacity .35s ease" }} />
-            <img
-              src={MAIN_IMG}
-              alt="메인 웨딩 사진"
-              className="absolute inset-0 w-full h-full object-contain"
-              loading="eager"
-              decoding="async"
-              fetchPriority="high"
-              sizes="100vw"
-              onLoad={() => setMainLoaded(true)}
-              style={{ opacity: mainLoaded ? 1 : 0, transform: mainLoaded ? "translateY(0px)" : "translateY(6px)", transition: "opacity .42s ease, transform .42s ease",
-                       contentVisibility: "auto", WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }}
-              draggable={false}
-              onContextMenu={(e) => e.preventDefault()}
-            />
+          <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white">
+            <div className="relative w-full aspect-[3/4]">
+              <div
+                className="absolute inset-0 animate-pulse"
+                style={{
+                  background:
+                    "linear-gradient(90deg, #f5ece7 25%, #f0e6e0 37%, #f5ece7 63%)",
+                  backgroundSize: "400% 100%",
+                  opacity: mainLoaded ? 0 : 1,
+                  transition: "opacity .35s ease",
+                }}
+              />
+              <img
+                src={MAIN_IMG}
+                alt="메인 웨딩 사진"
+                className="absolute inset-0 w-full h-full object-contain"
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
+                sizes="(max-width: 480px) 100vw, 448px"
+                onLoad={() => setMainLoaded(true)}
+                style={{
+                  opacity: mainLoaded ? 1 : 0,
+                  transform: mainLoaded ? "translateY(0px)" : "translateY(8px)",
+                  transition: "opacity .48s ease, transform .48s ease",
+                  WebkitUserSelect: "none",
+                  userSelect: "none",
+                  WebkitTouchCallout: "none",
+                }}
+                draggable={false}
+                onContextMenu={(e) => e.preventDefault()}
+              />
+            </div>
           </figure>
         </section>
       </Reveal>
@@ -329,23 +370,39 @@ export default function WeddingInvite() {
       {/* 3.5) 우디 사진 – 전체 보이도록 contain */}
       <Reveal>
         <section className="max-w-md mx-auto px-5 mt-6">
-          <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white relative h-[44svh]">
-            <div className="absolute inset-0 animate-pulse"
-                 style={{ background:"linear-gradient(90deg, #f5ece7 25%, #f0e6e0 37%, #f5ece7 63%)", backgroundSize:"400% 100%", opacity: woodyLoaded ? 0 : 1, transition: "opacity .35s ease" }} />
-            <img
-              src="/images/album/woody_25_06_13_069994.JPG"
-              alt="우디 사진"
-              className="absolute inset-0 w-full h-full object-contain"
-              loading="lazy"
-              decoding="async"
-              fetchPriority="low"
-              sizes="100vw"
-              onLoad={() => setWoodyLoaded(true)}
-              style={{ opacity: woodyLoaded ? 1 : 0, transform: woodyLoaded ? "translateY(0px)" : "translateY(6px)", transition: "opacity .42s ease, transform .42s ease",
-                       contentVisibility: "auto", WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }}
-              draggable={false}
-              onContextMenu={(e) => e.preventDefault()}
-            />
+          <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white">
+            <div className="relative w-full aspect-[3/4]">
+              <div
+                className="absolute inset-0 animate-pulse"
+                style={{
+                  background:
+                    "linear-gradient(90deg, #f5ece7 25%, #f0e6e0 37%, #f5ece7 63%)",
+                  backgroundSize: "400% 100%",
+                  opacity: woodyLoaded ? 0 : 1,
+                  transition: "opacity .35s ease",
+                }}
+              />
+              <img
+                src="/images/album/woody_25_06_13_069994.JPG"
+                alt="우디 사진"
+                className="absolute inset-0 w-full h-full object-contain"
+                loading="lazy"
+                decoding="async"
+                fetchPriority="low"
+                sizes="(max-width: 480px) 100vw, 448px"
+                onLoad={() => setWoodyLoaded(true)}
+                style={{
+                  opacity: woodyLoaded ? 1 : 0,
+                  transform: woodyLoaded ? "translateY(0px)" : "translateY(8px)",
+                  transition: "opacity .48s ease, transform .48s ease",
+                  WebkitUserSelect: "none",
+                  userSelect: "none",
+                  WebkitTouchCallout: "none",
+                }}
+                draggable={false}
+                onContextMenu={(e) => e.preventDefault()}
+              />
+            </div>
           </figure>
         </section>
       </Reveal>
