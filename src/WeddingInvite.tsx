@@ -571,88 +571,113 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
 }
 function Divider() { return <div className="my-3 h-px" style={{ background: THEME.line }} />; }
 
-/** 퍼가기 스니펫을 리액트에서 실행 */
+/** 퍼가기 스니펫을 리액트에서 실행 (인터랙티브 전용, 폴백 없음) */
 function KakaoMapEmbed({
   timestamp,
   mapKey,
-  width = "100%",
   height = 380,
 }: {
   timestamp: string;
   mapKey: string;
-  width?: number | string;
-  height?: number | string;
+  height?: number;
 }) {
-  const containerId = `daumRoughmapContainer${timestamp}`;
   const hostRef = useRef<HTMLDivElement | null>(null);
+
+  // roughmap 로더 준비
+  const ensureLoader = () =>
+    new Promise<void>((resolve) => {
+      if ((window as any).daum?.roughmap?.Lander) return resolve();
+      const existing = document.querySelector<HTMLScriptElement>(
+        "script.daum_roughmap_loader_script"
+      );
+      if (existing) {
+        const iv = setInterval(() => {
+          if ((window as any).daum?.roughmap?.Lander) {
+            clearInterval(iv);
+            resolve();
+          }
+        }, 50);
+        return;
+      }
+      const s = document.createElement("script");
+      s.src = "https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js";
+      s.charset = "UTF-8";
+      s.className = "daum_roughmap_loader_script";
+      s.onload = () => resolve();
+      document.head.appendChild(s);
+    });
+
+  // 실제 렌더 함수
+  const renderMap = async () => {
+    const host = hostRef.current;
+    if (!host) return;
+
+    // px 단위 폭 측정 (최소 300)
+    const widthPx = Math.max(300, Math.floor(host.clientWidth || 0)) || 504;
+
+    // 컨테이너 초기화/재생성
+    host.innerHTML = "";
+    const containerId = `daumRoughmapContainer${timestamp}`;
+    const inner = document.createElement("div");
+    inner.id = containerId;
+    inner.className = "root_daum_roughmap root_daum_roughmap_landing";
+    host.appendChild(inner);
+
+    // 고정 높이
+    host.style.minHeight = `${height}px`;
+
+    await ensureLoader();
+
+    // RoughMap은 문자열 숫자 선호
+    const lander = new (window as any).daum.roughmap.Lander({
+      timestamp,
+      key: mapKey,
+      mapWidth: String(widthPx),
+      mapHeight: String(height),
+    });
+    lander.render();
+  };
 
   useEffect(() => {
     let disposed = false;
-
-    const ensureLoader = () =>
-      new Promise<void>((resolve) => {
-        const ready = () => (window as any).daum?.roughmap?.Lander ? resolve() : null;
-        if ((window as any).daum?.roughmap?.Lander) { resolve(); return; }
-
-        const existing = document.querySelector<HTMLScriptElement>("script.daum_roughmap_loader_script");
-        if (existing) {
-          const iv = setInterval(() => {
-            if ((window as any).daum?.roughmap?.Lander) { clearInterval(iv); resolve(); }
-          }, 50);
-          return;
-        }
-        const s = document.createElement("script");
-        s.src = "https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js";
-        s.charset = "UTF-8";
-        s.className = "daum_roughmap_loader_script";
-        s.onload = () => resolve();
-        document.head.appendChild(s);
-      });
-
-    const ensureContainer = () => {
-      if (!hostRef.current) return;
-      let inner = hostRef.current.querySelector<HTMLDivElement>(`#${CSS.escape(containerId)}`);
-      if (!inner) {
-        inner = document.createElement("div");
-        inner.id = containerId;
-        inner.className = "root_daum_roughmap root_daum_roughmap_landing";
-        hostRef.current.appendChild(inner);
-      } else {
-        inner.innerHTML = "";
-      }
-      hostRef.current.style.minHeight = typeof height === "number" ? `${height}px` : String(height);
-    };
-
-    const render = async () => {
-      ensureContainer();
-      await ensureLoader();
-      if (disposed) return;
+    (async () => {
       try {
-        const lander = new (window as any).daum.roughmap.Lander({
-          timestamp,
-          key: mapKey,
-          mapWidth: typeof width === "number" ? `${width}px` : width,
-          mapHeight: typeof height === "number" ? `${height}px` : height,
-        });
-        lander.render();
-      } catch {
-        setTimeout(() => {
-          try {
-            const lander = new (window as any).daum.roughmap.Lander({
-              timestamp,
-              key: mapKey,
-              mapWidth: typeof width === "number" ? `${width}px` : width,
-              mapHeight: typeof height === "number" ? `${height}px` : height,
-            });
-            lander.render();
-          } catch {}
-        }, 120);
+        await renderMap();
+      } catch (e) {
+        console.error("[KakaoMapEmbed] render failed:", e);
       }
-    };
+    })();
 
-    render();
-    return () => { disposed = true; };
-  }, [timestamp, mapKey, width, height]);
+    // 리사이즈 대응(폭 변경 시 재렌더)
+    let raf: number | null = null;
+    const ro =
+      "ResizeObserver" in window
+        ? new ResizeObserver(() => {
+            if (raf) cancelAnimationFrame(raf);
+            raf = requestAnimationFrame(() => {
+              if (!disposed) renderMap();
+            });
+          })
+        : null;
+
+    if (ro && hostRef.current) ro.observe(hostRef.current);
+
+    const onResize = () => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        if (!disposed) renderMap();
+      });
+    };
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      disposed = true;
+      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+      ro?.disconnect();
+    };
+    // timestamp/mapKey/height 변경 시 재렌더
+  }, [timestamp, mapKey, height]);
 
   return <div ref={hostRef} />;
 }
