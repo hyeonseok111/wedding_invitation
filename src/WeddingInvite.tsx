@@ -16,11 +16,11 @@ const VENUE_NAME = "아펠가모 공덕 라로브홀";
 const VENUE_ADDR = "서울 마포구 마포대로 92 효성해링턴스퀘어 B동 7층";
 const VENUE_TEL = "02-2197-0230";
 
-/** 카카오 roughmap 퍼가기 키(스니펫 미사용, 컴포넌트에서 사용) */
-const KAKAO_EMBED_TIMESTAMP = "1755605224737";
-const KAKAO_EMBED_KEY = "7ntjrdjuwid";
+/** 카카오 퍼가기(스니펫) 값 */
+const KAKAO_SNIPPET_TIMESTAMP = "1755608173506";
+const KAKAO_SNIPPET_KEY = "7aafu24dufz";
 
-/** 외부 맵 단축 링크(바로 열기) */
+/** 외부 맵 단축 링크 */
 const NAVER_PLACE_SHORT = "https://naver.me/xmBt7BeP";
 const KAKAO_PLACE_SHORT = "https://kko.kakao.com/9oelYjxw4s";
 
@@ -53,6 +53,52 @@ function daysUntil(iso: string) {
   const today = new Date();
   return Math.ceil((startOf(event) - startOf(today)) / 86400000);
 }
+function formatKoreanDateTime(iso: string) {
+  const d = new Date(iso);
+  const w = ["일요일","월요일","화요일","수요일","목요일","금요일","토요일"][d.getDay()];
+  let h = d.getHours();
+  const ampm = h < 12 ? "오전" : "오후";
+  h = h % 12 || 12;
+  const m = d.getMinutes();
+  return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${w} ${ampm} ${h}시 ${m.toString().padStart(2,"0")}분`;
+}
+
+/** ───────── 스크롤 리빌(살짝 위로 떠오르듯) ───────── */
+function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (ents) => {
+        ents.forEach((e) => {
+          if (e.isIntersecting) {
+            el.style.opacity = "1";
+            el.style.transform = "translateY(0)";
+            io.unobserve(el);
+          }
+        });
+      },
+      { rootMargin: "0px 0px -10% 0px", threshold: 0.12 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: 0,
+        transform: "translateY(8px)",
+        transition: "opacity .45s ease, transform .45s ease",
+        willChange: "transform, opacity",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 /** ───────── 메인 컴포넌트 ───────── */
 export default function WeddingInvite() {
@@ -71,6 +117,7 @@ export default function WeddingInvite() {
   const eventDate = useMemo(() => new Date(WEDDING_ISO), []);
   const mm = pad2(eventDate.getMonth() + 1);
   const dd = pad2(eventDate.getDate());
+  const dateLine = useMemo(() => formatKoreanDateTime(WEDDING_ISO), []);
 
   /** D-day (자정 자동 갱신) */
   const [dDay, setDDay] = useState(() => daysUntil(WEDDING_ISO));
@@ -123,7 +170,7 @@ export default function WeddingInvite() {
   /** 복사 */
   const copy = async (txt: string) => { try { await navigator.clipboard.writeText(txt); alert(`복사되었습니다: ${txt}`); } catch {} };
 
-  /** ── 앨범 뷰어(라이트박스) 상태 ── */
+  /** 앨범 뷰어(라이트박스) 상태 */
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIdx, setViewerIdx] = useState(0);
   const images = albumIndex?.album ?? [];
@@ -133,12 +180,10 @@ export default function WeddingInvite() {
   const next = () => setViewerIdx((i) => (i + 1) % images.length);
   const prev = () => setViewerIdx((i) => (i - 1 + images.length) % images.length);
 
-  // 스크롤 잠금 + 키보드 + 확대(핀치/휠/제스처) 금지
   useEffect(() => {
     if (!viewerOpen) return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-
     const prevent = (e: Event) => e.preventDefault();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") closeViewer();
@@ -146,13 +191,11 @@ export default function WeddingInvite() {
       if (e.key === "ArrowLeft") prev();
     };
     const onWheel = (e: WheelEvent) => { if (e.ctrlKey) e.preventDefault(); };
-
     window.addEventListener("keydown", onKey);
     document.addEventListener("gesturestart", prevent as any, { passive: false } as any);
     document.addEventListener("gesturechange", prevent as any, { passive: false } as any);
     document.addEventListener("gestureend", prevent as any, { passive: false } as any);
     window.addEventListener("wheel", onWheel, { passive: false });
-
     return () => {
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", onKey);
@@ -163,13 +206,12 @@ export default function WeddingInvite() {
     };
   }, [viewerOpen, images.length]);
 
-  // 터치 스와이프 + 더블탭 확대 방지
   const touchStartX = useRef<number | null>(null);
   const lastTouchEnd = useRef<number>(0);
   const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
   const onTouchEnd = (e: React.TouchEvent) => {
     const now = Date.now();
-    if (now - lastTouchEnd.current <= 350) e.preventDefault(); // 더블탭 확대 방지
+    if (now - lastTouchEnd.current <= 350) e.preventDefault();
     lastTouchEnd.current = now;
     if (touchStartX.current == null) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
@@ -186,7 +228,7 @@ export default function WeddingInvite() {
     <main className="min-h-screen font-sans" style={{ background: THEME.bg, color: THEME.ink }}>
       {/* 상단 그라데이션 */}
       <div className="fixed inset-x-0 top-0 h-24 pointer-events-none -z-0"
-           style={{ background: "linear-gradient(180deg, rgba(214,120,120,0.10), rgba(214,120,120,0))", willChange:"transform" }} />
+           style={{ background: "linear-gradient(180deg, rgba(214,120,120,0.10), rgba(214,120,120,0))" }} />
 
       {/* BGM 토글 */}
       <button onClick={toggleBgm} aria-label={isPlaying ? "배경음악 일시정지" : "배경음악 재생"} aria-pressed={isPlaying}
@@ -196,208 +238,238 @@ export default function WeddingInvite() {
       </button>
       <audio ref={audioRef} src={BGM_SRC} preload="none" loop className="hidden" />
 
-      {/* 1) 대형 타이포 배너 */}
-      <section className="max-w-md mx-auto px-5 pt-10 pb-5">
-        <div className="flex items-end justify-between">
-          <h1 className="tracking-[0.2em]"
-              style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(22px, 5vw, 32px)", fontWeight: 500 }}>
-            이&nbsp;현&nbsp;석
-          </h1>
-        <div className="text-center mx-3 select-none">
-            <div className="leading-none" style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(40px, 10.5vw, 72px)" }}>{mm}</div>
-            <div className="w-9 mx-auto my-1 border-t" style={{ borderColor: "#DADADA" }} />
-            <div className="leading-none" style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(40px, 10.5vw, 72px)" }}>{dd}</div>
+      {/* 1) 대형 타이포 배너 (상단 날짜/장소 라인 제거) */}
+      <Reveal>
+        <section className="max-w-md mx-auto px-5 pt-10 pb-5">
+          <div className="flex items-end justify-between">
+            <h1 className="tracking-[0.2em]"
+                style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(22px, 5vw, 32px)", fontWeight: 500 }}>
+              이&nbsp;현&nbsp;석
+            </h1>
+            <div className="text-center mx-3 select-none">
+              <div className="leading-none" style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(40px, 10.5vw, 72px)" }}>{mm}</div>
+              <div className="w-9 mx-auto my-1 border-t" style={{ borderColor: "#DADADA" }} />
+              <div className="leading-none" style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(40px, 10.5vw, 72px)" }}>{dd}</div>
+            </div>
+            <h1 className="tracking-[0.2em] text-right"
+                style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(22px, 5vw, 32px)", fontWeight: 500 }}>
+              유&nbsp;지&nbsp;현
+            </h1>
           </div>
-          <h1 className="tracking-[0.2em] text-right"
-              style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(22px, 5vw, 32px)", fontWeight: 500 }}>
-            유&nbsp;지&nbsp;현
-          </h1>
-        </div>
-        <p className="mt-3 text-center text-gray-600" style={{ fontSize: "clamp(12px, 2.6vw, 13.5px)" }}>
-          2025년 12월 7일 일요일 15:30 · {VENUE_NAME}
-        </p>
-      </section>
+        </section>
+      </Reveal>
 
-      {/* 2) 메인 이미지 — 스켈레톤 + 페이드/슬라이드 인 */}
-      <section className="max-w-md mx-auto px-5">
-        <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white relative h-[48svh]">
-          <div className="absolute inset-0 animate-pulse"
-               style={{ background:"linear-gradient(90deg, #f5ece7 25%, #f0e6e0 37%, #f5ece7 63%)", backgroundSize:"400% 100%", opacity: mainLoaded ? 0 : 1, transition: "opacity .35s ease" }} />
-          <img
-            src={MAIN_IMG}
-            alt="메인 웨딩 사진"
-            className="absolute inset-0 w-full h-full object-cover"
-            loading="eager"
-            decoding="async"
-            fetchPriority="high"
-            onLoad={() => setMainLoaded(true)}
-            style={{ opacity: mainLoaded ? 1 : 0, transform: mainLoaded ? "translateY(0px)" : "translateY(6px)", transition: "opacity .42s ease, transform .42s ease",
-                     contentVisibility: "auto", WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }}
-            draggable={false}
-            onContextMenu={(e) => e.preventDefault()}
-          />
-        </figure>
-      </section>
+      {/* 2) 메인 이미지 – 사진 전체 보이도록(object-contain) */}
+      <Reveal>
+        <section className="max-w-md mx-auto px-5">
+          <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white relative h-[48svh]">
+            <div className="absolute inset-0 animate-pulse"
+                 style={{ background:"linear-gradient(90deg, #f5ece7 25%, #f0e6e0 37%, #f5ece7 63%)", backgroundSize:"400% 100%", opacity: mainLoaded ? 0 : 1, transition: "opacity .35s ease" }} />
+            <img
+              src={MAIN_IMG}
+              alt="메인 웨딩 사진"
+              className="absolute inset-0 w-full h-full object-contain"   {/* ← 변경: cover → contain */}
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
+              sizes="100vw"
+              onLoad={() => setMainLoaded(true)}
+              style={{ opacity: mainLoaded ? 1 : 0, transform: mainLoaded ? "translateY(0px)" : "translateY(6px)", transition: "opacity .42s ease, transform .42s ease",
+                       contentVisibility: "auto", WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }}
+              draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
+            />
+          </figure>
+        </section>
+      </Reveal>
+
+      {/* 2.1) 날짜/장소 – 메인 사진 아래 두 줄 */}
+      <Reveal>
+        <section className="max-w-md mx-auto px-5 mt-3">
+          <p className="text-center text-gray-700" style={{ fontSize: "clamp(13px,3.2vw,14px)" }}>
+            {dateLine}
+          </p>
+          <p className="text-center text-gray-900 font-medium" style={{ fontSize: "clamp(14px,3.6vw,16px)" }}>
+            {VENUE_NAME}
+          </p>
+        </section>
+      </Reveal>
 
       {/* 3) 시 + 초대문 (합본 카드) */}
-      <section className="max-w-md mx-auto px-5 mt-8">
-        <Card className="text-center p-7">
-          <div className="flex justify-center">
-            <div className="w-8 h-8 rounded-full bg-[#F6E8E8]/60 flex items-center justify-center">
-              <span aria-hidden className="text-[10px] text-[#8a6a6a]">✿</span>
+      <Reveal>
+        <section className="max-w-md mx-auto px-5 mt-8">
+          <Card className="text-center p-7">
+            <div className="flex justify-center">
+              <div className="w-8 h-8 rounded-full bg-[#F6E8E8]/60 flex items-center justify-center">
+                <span aria-hidden className="text-[10px] text-[#8a6a6a]">✿</span>
+              </div>
             </div>
-          </div>
 
-          <div className="mt-4 text-gray-800"
-               style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(16px, 3.7vw, 20px)", lineHeight: 1.85 }}>
-            <p>장담하건대, 세상이 다 겨울이어도</p>
-            <p className="mt-1.5">우리 사랑은 늘봄처럼 따뜻하고</p>
-            <p className="mt-1.5">간혹, 여름처럼 뜨거울 겁니다</p>
-            <p className="mt-2 text-gray-500" style={{ fontSize: "0.95em" }}>– 이수동, &lt;사랑가&gt; –</p>
-          </div>
+            <div className="mt-4 text-gray-800"
+                 style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(16px, 3.7vw, 20px)", lineHeight: 1.85 }}>
+              <p>장담하건대, 세상이 다 겨울이어도</p>
+              <p className="mt-1.5">우리 사랑은 늘봄처럼 따뜻하고</p>
+              <p className="mt-1.5">간혹, 여름처럼 뜨거울 겁니다</p>
+              <p className="mt-2 text-gray-500" style={{ fontSize: "0.95em" }}>– 이수동, &lt;사랑가&gt; –</p>
+            </div>
 
-          <div className="my-6 h-px" style={{ background: "#eee" }} />
+            <div className="my-6 h-px" style={{ background: "#eee" }} />
 
-          <h3 className="tracking-[0.35em] text-gray-500" style={{ fontSize: "clamp(11px, 2.6vw, 13px)" }}>INVITATION</h3>
-          <div className="mt-4 text-gray-900" style={{ fontSize: "clamp(16px, 3.6vw, 20px)", lineHeight: 1.85 }}>
-            <p>사랑이 봄처럼 시작되어</p>
-            <p className="mt-1.5">겨울의 약속으로 이어집니다.</p>
-            <p className="mt-1.5">하루하루의 마음이 저희의 계절을 만들었으니</p>
-            <p className="mt-1.5">함께 오셔서 따뜻히 축복해 주시면 감사하겠습니다.</p>
-          </div>
-          {/* 날짜/장소 라인 제거 */}
-        </Card>
-      </section>
+            <h3 className="tracking-[0.35em] text-gray-500" style={{ fontSize: "clamp(11px, 2.6vw, 13px)" }}>INVITATION</h3>
+            <div className="mt-4 text-gray-900" style={{ fontSize: "clamp(16px, 3.6vw, 20px)", lineHeight: 1.85 }}>
+              <p>사랑이 봄처럼 시작되어</p>
+              <p className="mt-1.5">겨울의 약속으로 이어집니다.</p>
+              <p className="mt-1.5">하루하루의 마음이 저희의 계절을 만들었으니</p>
+              <p className="mt-1.5">함께 오셔서 따뜻히 축복해 주시면 감사하겠습니다.</p>
+            </div>
+          </Card>
+        </section>
+      </Reveal>
 
-      {/* 3.5) 우디 사진 — 시+초대문과 연락 라인 사이 */}
-      <section className="max-w-md mx-auto px-5 mt-6">
-        <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white relative h-[44svh]">
-          <div className="absolute inset-0 animate-pulse"
-               style={{ background:"linear-gradient(90deg, #f5ece7 25%, #f0e6e0 37%, #f5ece7 63%)", backgroundSize:"400% 100%", opacity: woodyLoaded ? 0 : 1, transition: "opacity .35s ease" }} />
-          <img
-            src="/images/album/woody_25_06_13_069994.JPG"
-            alt="우디 사진"
-            className="absolute inset-0 w-full h-full object-cover"
-            loading="lazy"
-            decoding="async"
-            fetchPriority="low"
-            onLoad={() => setWoodyLoaded(true)}
-            style={{ opacity: woodyLoaded ? 1 : 0, transform: woodyLoaded ? "translateY(0px)" : "translateY(6px)", transition: "opacity .42s ease, transform .42s ease",
-                     contentVisibility: "auto", WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }}
-            draggable={false}
-            onContextMenu={(e) => e.preventDefault()}
-          />
-        </figure>
-      </section>
+      {/* 3.5) 우디 사진 – 전체 보이도록 contain */}
+      <Reveal>
+        <section className="max-w-md mx-auto px-5 mt-6">
+          <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white relative h-[44svh]">
+            <div className="absolute inset-0 animate-pulse"
+                 style={{ background:"linear-gradient(90deg, #f5ece7 25%, #f0e6e0 37%, #f5ece7 63%)", backgroundSize:"400% 100%", opacity: woodyLoaded ? 0 : 1, transition: "opacity .35s ease" }} />
+            <img
+              src="/images/album/woody_25_06_13_069994.JPG"
+              alt="우디 사진"
+              className="absolute inset-0 w-full h-full object-contain"   {/* ← 변경 */}
+              loading="lazy"
+              decoding="async"
+              fetchPriority="low"
+              sizes="100vw"
+              onLoad={() => setWoodyLoaded(true)}
+              style={{ opacity: woodyLoaded ? 1 : 0, transform: woodyLoaded ? "translateY(0px)" : "translateY(6px)", transition: "opacity .42s ease, transform .42s ease",
+                       contentVisibility: "auto", WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }}
+              draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
+            />
+          </figure>
+        </section>
+      </Reveal>
 
       {/* 4) 연락 라인 */}
-      <section className="max-w-md mx-auto px-5 mt-6">
-        <Card>
-          <ContactRow label={GROOM_LINE} tel={GROOM_TEL} />
-          <Divider />
-          <ContactRow label={BRIDE_LINE} tel={BRIDE_TEL} />
-        </Card>
-      </section>
+      <Reveal>
+        <section className="max-w-md mx-auto px-5 mt-6">
+          <Card>
+            <ContactRow label={GROOM_LINE} tel={GROOM_TEL} />
+            <Divider />
+            <ContactRow label={BRIDE_LINE} tel={BRIDE_TEL} />
+          </Card>
+        </section>
+      </Reveal>
 
       {/* 5) 달력 + D-day */}
-      <CalendarCard days={days} cells={dec2025Cells} highlight={THEME.hl} dDay={dDay} />
+      <Reveal>
+        <CalendarCard days={days} cells={dec2025Cells} highlight={THEME.hl} dDay={dDay} />
+      </Reveal>
 
-      {/* 6) 오시는 길 + 실시간 카카오 지도 + 외부 버튼 */}
-      <section className="max-w-md mx-auto px-5 mt-6">
-        <Card className="text-center">
-          <h2 className="font-semibold mb-1.5" style={{ color: THEME.hl, fontSize: "clamp(15px,4vw,17px)" }}>
-            오시는 길
-          </h2>
-          <p className="font-bold" style={{ fontSize: "clamp(14.5px,3.8vw,16px)" }}>{VENUE_NAME}</p>
-          <p className="mt-1 text-gray-700" style={{ fontSize: "clamp(13px,3.2vw,14px)" }}>
-            {VENUE_ADDR}
-          </p>
+      {/* 6) 오시는 길 + 카카오 지도 + 외부 버튼 */}
+      <Reveal>
+        <section className="max-w-md mx-auto px-5 mt-6">
+          <Card className="text-center">
+            <h2 className="font-semibold mb-1.5" style={{ color: THEME.hl, fontSize: "clamp(15px,4vw,17px)" }}>
+              오시는 길
+            </h2>
+            <p className="font-bold" style={{ fontSize: "clamp(14.5px,3.8vw,16px)" }}>{VENUE_NAME}</p>
+            <p className="mt-1 text-gray-700" style={{ fontSize: "clamp(13px,3.2vw,14px)" }}>
+              {VENUE_ADDR}
+            </p>
 
-          <div className="mt-3">
-            <a href={`tel:${VENUE_TEL.replace(/[^0-9]/g, "")}`}
-               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition border"
-               style={{ background: THEME.ink, color: "#fff", borderColor: "transparent" }}>
-              <PhoneIcon width={16} height={16} /> 안내 전화
-            </a>
-          </div>
+            <div className="mt-3">
+              <a href={`tel:${VENUE_TEL.replace(/[^0-9]/g, "")}`}
+                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition border"
+                 style={{ background: THEME.ink, color: "#fff", borderColor: "transparent" }}>
+                <PhoneIcon width={16} height={16} /> 안내 전화
+              </a>
+            </div>
 
-          {/* 실시간 카카오 지도(핀치줌/드래그 가능) */}
-          <div className="mt-5 rounded-2xl overflow-hidden shadow-sm border"
-               style={{ borderColor: THEME.line }}>
-            <KakaoRoughMap
-              timestamp={KAKAO_EMBED_TIMESTAMP}
-              mapKey={KAKAO_EMBED_KEY}
-              width="100%"
-              height={380}
-            />
-          </div>
+            <div className="mt-5 rounded-2xl overflow-hidden shadow-sm border" style={{ borderColor: THEME.line }}>
+              <KakaoMapEmbed
+                timestamp={KAKAO_SNIPPET_TIMESTAMP}
+                mapKey={KAKAO_SNIPPET_KEY}
+                width="100%"
+                height={380}
+              />
+            </div>
 
-          {/* 지도 바로가기 버튼 */}
-          <div className="mt-5 grid grid-cols-2 gap-3">
-            <AppLink label="네이버 지도" href={NAVER_PLACE_SHORT}>
-              <NaverOfficialIcon className="w-5 h-5" />
-            </AppLink>
-            <AppLink label="카카오 지도" href={KAKAO_PLACE_SHORT}>
-              <KakaoMapOfficialIcon className="w-5 h-5" />
-            </AppLink>
-          </div>
-        </Card>
-      </section>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <AppLink label="네이버 지도" href={NAVER_PLACE_SHORT}>
+                <NaverOfficialIcon className="w-5 h-5" />
+              </AppLink>
+              <AppLink label="카카오 지도" href={KAKAO_PLACE_SHORT}>
+                <KakaoMapOfficialIcon className="w-5 h-5" />
+              </AppLink>
+            </div>
+          </Card>
+        </section>
+      </Reveal>
 
       {/* 7) 교통/주차/안내 */}
-      <InfoSections highlight={THEME.hl} />
+      <Reveal>
+        <InfoSections highlight={THEME.hl} />
+      </Reveal>
 
       {/* 8) 앨범 (썸네일 + 라이트박스) */}
-      <section className="max-w-md mx-auto px-5 mt-6" onContextMenu={(e) => e.preventDefault()}>
-        <Card>
-          <h3 className="text-center font-semibold mb-3" style={{ color: THEME.hl, fontSize: "clamp(15px,4vw,17px)" }}>
-            ALBUM
-          </h3>
-          {albumError && <p className="text-sm text-red-500 text-center mb-3">{albumError}</p>}
+      <Reveal>
+        <section className="max-w-md mx-auto px-5 mt-6" onContextMenu={(e) => e.preventDefault()}>
+          <Card>
+            <h3 className="text-center font-semibold mb-3" style={{ color: THEME.hl, fontSize: "clamp(15px,4vw,17px)" }}>
+              ALBUM
+            </h3>
+            {albumError && <p className="text-sm text-red-500 text-center mb-3">{albumError}</p>}
 
-          <div className="grid grid-cols-3 gap-2.5 select-none" style={{ WebkitTouchCallout: "none" }}>
-            {images.map((file, idx) => (
-              <figure
-                key={`${file}-${idx}`}
-                className="rounded-xl overflow-hidden bg-gray-100 cursor-zoom-in"
-                role="button"
-                tabIndex={0}
-                onClick={() => openViewer(idx)}
-                onKeyDown={(e) => (e.key === "Enter" ? openViewer(idx) : null)}
-              >
-                <img
-                  src={`/images/album/${file}`}
-                  alt={`album-${idx}`}
-                  loading="lazy"
-                  decoding="async"
-                  fetchPriority="low"
-                  className="w-full aspect-square object-cover pointer-events-none"
-                  style={{ WebkitUserSelect: "none", userSelect: "none" }}
-                  draggable={false}
-                  onContextMenu={(e) => e.preventDefault()}
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                />
-              </figure>
-            ))}
-          </div>
-        </Card>
-      </section>
+            <div className="grid grid-cols-3 gap-2.5 select-none" style={{ WebkitTouchCallout: "none" }}>
+              {(albumIndex?.album ?? []).map((file, idx) => (
+                <figure
+                  key={`${file}-${idx}`}
+                  className="rounded-xl overflow-hidden bg-gray-100 cursor-zoom-in relative"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openViewer(idx)}
+                  onKeyDown={(e) => (e.key === "Enter" ? openViewer(idx) : null)}
+                >
+                  <div className="absolute inset-0 animate-pulse" style={{ background:"linear-gradient(90deg,#f3f3f3 25%,#ececec 37%,#f3f3f3 63%)", backgroundSize:"400% 100%" }} />
+                  <img
+                    src={`/images/album/${file}`}
+                    alt={`album-${idx}`}
+                    loading="lazy"
+                    decoding="async"
+                    fetchPriority="low"
+                    sizes="(max-width: 768px) 33vw, 200px"
+                    className="w-full aspect-square object-cover pointer-events-none relative"
+                    style={{ WebkitUserSelect: "none", userSelect: "none", contentVisibility: "auto" }}
+                    draggable={false}
+                    onLoad={(e) => { (e.currentTarget.previousElementSibling as HTMLElement)?.remove(); }}
+                    onContextMenu={(e) => e.preventDefault()}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                </figure>
+              ))}
+            </div>
+          </Card>
+        </section>
+      </Reveal>
 
       {/* 9) 마음 전하는 곳 */}
-      <section className="max-w-md mx-auto px-5 mt-6 pb-20">
-        <Card>
-          <h2 className="text-center font-semibold mb-3" style={{ color: THEME.hl, fontSize: "clamp(15px,4vw,17px)" }}>
-            마음을 전하는 곳
-          </h2>
-          <Accordion title="신랑측 계좌번호">
-            <AccountList accounts={GROOM_ACCOUNTS} onCopy={(v) => copy(v)} />
-          </Accordion>
-          <Accordion title="신부측 계좌번호">
-            <AccountList accounts={BRIDE_ACCOUNTS} onCopy={(v) => copy(v)} />
-          </Accordion>
-          <p className="mt-1 text-[11px] text-gray-500">예식장 내 화환 반입이 불가하여 마음만 감사히 받겠습니다.</p>
-        </Card>
-      </section>
+      <Reveal>
+        <section className="max-w-md mx-auto px-5 mt-6 pb-20">
+          <Card>
+            <h2 className="text-center font-semibold mb-3" style={{ color: THEME.hl, fontSize: "clamp(15px,4vw,17px)" }}>
+              마음을 전하는 곳
+            </h2>
+            <Accordion title="신랑측 계좌번호">
+              <AccountList accounts={GROOM_ACCOUNTS} onCopy={(v) => copy(v)} />
+            </Accordion>
+            <Accordion title="신부측 계좌번호">
+              <AccountList accounts={BRIDE_ACCOUNTS} onCopy={(v) => copy(v)} />
+            </Accordion>
+            <p className="mt-1 text-[11px] text-gray-500">예식장 내 화환 반입이 불가하여 마음만 감사히 받겠습니다.</p>
+          </Card>
+        </section>
+      </Reveal>
 
       {/* ── 풀스크린 앨범 뷰어 (확대 금지) ── */}
       {viewerOpen && images.length > 0 && (
@@ -443,8 +515,8 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
 }
 function Divider() { return <div className="my-3 h-px" style={{ background: THEME.line }} />; }
 
-/** Kakao roughmap embed — 스니펫 없이 견고하게 초기화 */
-function KakaoRoughMap({
+/** 퍼가기 스니펫을 리액트에서 실행 */
+function KakaoMapEmbed({
   timestamp,
   mapKey,
   width = "100%",
@@ -457,35 +529,22 @@ function KakaoRoughMap({
 }) {
   const containerId = `daumRoughmapContainer${timestamp}`;
   const hostRef = useRef<HTMLDivElement | null>(null);
-  const initedRef = useRef(false);
 
   useEffect(() => {
     let disposed = false;
 
-    // 1) 로더 스크립트 준비 대기
     const ensureLoader = () =>
       new Promise<void>((resolve) => {
-        const ready = () =>
-          (window as any).daum?.roughmap?.Lander ? resolve() : null;
+        const ready = () => (window as any).daum?.roughmap?.Lander ? resolve() : null;
+        if ((window as any).daum?.roughmap?.Lander) { resolve(); return; }
 
-        if ((window as any).daum?.roughmap?.Lander) {
-          resolve();
-          return;
-        }
-
-        const existing = document.querySelector<HTMLScriptElement>(
-          "script.daum_roughmap_loader_script"
-        );
+        const existing = document.querySelector<HTMLScriptElement>("script.daum_roughmap_loader_script");
         if (existing) {
           const iv = setInterval(() => {
-            if ((window as any).daum?.roughmap?.Lander) {
-              clearInterval(iv);
-              resolve();
-            }
+            if ((window as any).daum?.roughmap?.Lander) { clearInterval(iv); resolve(); }
           }, 50);
           return;
         }
-
         const s = document.createElement("script");
         s.src = "https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js";
         s.charset = "UTF-8";
@@ -494,12 +553,9 @@ function KakaoRoughMap({
         document.head.appendChild(s);
       });
 
-    // 2) 컨테이너 보장
     const ensureContainer = () => {
       if (!hostRef.current) return;
-      let inner = hostRef.current.querySelector<HTMLDivElement>(
-        `#${CSS.escape(containerId)}`
-      );
+      let inner = hostRef.current.querySelector<HTMLDivElement>(`#${CSS.escape(containerId)}`);
       if (!inner) {
         inner = document.createElement("div");
         inner.id = containerId;
@@ -508,17 +564,13 @@ function KakaoRoughMap({
       } else {
         inner.innerHTML = "";
       }
-      // 크기 보장
-      hostRef.current.style.minHeight =
-        typeof height === "number" ? `${height}px` : String(height);
+      hostRef.current.style.minHeight = typeof height === "number" ? `${height}px` : String(height);
     };
 
     const render = async () => {
-      if (disposed || initedRef.current) return;
       ensureContainer();
       await ensureLoader();
       if (disposed) return;
-
       try {
         const lander = new (window as any).daum.roughmap.Lander({
           timestamp,
@@ -527,11 +579,8 @@ function KakaoRoughMap({
           mapHeight: typeof height === "number" ? `${height}px` : height,
         });
         lander.render();
-        initedRef.current = true;
       } catch {
-        // 로더 직후 레이스 컨디션 대응 1회 재시도
         setTimeout(() => {
-          if (disposed || initedRef.current) return;
           try {
             const lander = new (window as any).daum.roughmap.Lander({
               timestamp,
@@ -540,7 +589,6 @@ function KakaoRoughMap({
               mapHeight: typeof height === "number" ? `${height}px` : height,
             });
             lander.render();
-            initedRef.current = true;
           } catch {}
         }, 120);
       }
