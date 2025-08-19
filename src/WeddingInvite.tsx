@@ -562,14 +562,23 @@ export default function WeddingInvite() {
 
 /* ───────── 공통 컴포넌트/유틸 ───────── */
 
-function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+function Card({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className={`rounded-[20px] shadow-sm p-6 bg-white ${className}`}
-         style={{ background: THEME.card, contentVisibility: "auto", containIntrinsicSize: "600px" }}>
+    <div
+      className={`rounded-[20px] shadow-sm p-6 bg-white ${className}`}
+      style={{ background: THEME.card }}
+    >
       {children}
     </div>
   );
 }
+
 function Divider() { return <div className="my-3 h-px" style={{ background: THEME.line }} />; }
 
 /** 퍼가기 스니펫을 리액트에서 실행 */
