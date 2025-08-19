@@ -431,10 +431,10 @@ export default function WeddingInvite() {
           </div>
 
           <div className="mt-5 rounded-2xl overflow-hidden shadow-sm border" style={{ borderColor: THEME.line }}>
-            <
+            <KakaoMapEmbed
               timestamp={KAKAO_SNIPPET_TIMESTAMP}
               mapKey={KAKAO_SNIPPET_KEY}
-              height={380}   // 필요시 380 등으로 조절
+              height={380} {/* 필요시 높이 조절 */}
             />
           </div>
 
