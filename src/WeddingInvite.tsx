@@ -469,39 +469,51 @@ export default function WeddingInvite() {
         <InfoSections highlight={THEME.hl} />
       </Reveal>
 
-      {/* 8) 앨범 (썸네일 + 라이트박스) */}
+      {/* 8) 앨범 (원본 비율 + 라이트박스) */}
       <Reveal>
-        <section className="max-w-md mx-auto px-5 mt-6" onContextMenu={(e) => e.preventDefault()}>
+        <section
+          className="max-w-md mx-auto px-5 mt-6"
+          onContextMenu={(e) => e.preventDefault()}
+        >
           <Card>
-            <h3 className="text-center font-semibold mb-3" style={{ color: THEME.hl, fontSize: "clamp(15px,4vw,17px)" }}>
+            <h3
+              className="text-center font-semibold mb-3"
+              style={{ color: THEME.hl, fontSize: "clamp(15px,4vw,17px)" }}
+            >
               ALBUM
             </h3>
-            {albumError && <p className="text-sm text-red-500 text-center mb-3">{albumError}</p>}
-
-            <div className="grid grid-cols-3 gap-2.5 select-none" style={{ WebkitTouchCallout: "none" }}>
+            {albumError && (
+              <p className="text-sm text-red-500 text-center mb-3">{albumError}</p>
+            )}
+      
+            {/* ✅ Masonry(열) 레이아웃: 원본 비율 그대로 */}
+            <div
+              className="columns-2 gap-3 [column-fill:_balance] select-none"
+              style={{ WebkitTouchCallout: "none" }}
+            >
               {(albumIndex?.album ?? []).map((file, idx) => (
                 <figure
                   key={`${file}-${idx}`}
-                  className="rounded-xl overflow-hidden bg-gray-100 cursor-zoom-in relative"
+                  className="mb-3 break-inside-avoid rounded-xl overflow-hidden bg-gray-100 cursor-zoom-in"
                   role="button"
                   tabIndex={0}
                   onClick={() => openViewer(idx)}
                   onKeyDown={(e) => (e.key === "Enter" ? openViewer(idx) : null)}
                 >
-                  <div className="absolute inset-0 animate-pulse" style={{ background:"linear-gradient(90deg,#f3f3f3 25%,#ececec 37%,#f3f3f3 63%)", backgroundSize:"400% 100%" }} />
+                  {/* ⛔ 저장/롱탭 방지: pointer-events-none + contextmenu 방지 */}
                   <img
                     src={`/images/album/${file}`}
                     alt={`album-${idx}`}
                     loading="lazy"
                     decoding="async"
                     fetchPriority="low"
-                    sizes="(max-width: 768px) 33vw, 200px"
-                    className="w-full aspect-square object-cover pointer-events-none relative"
-                    style={{ WebkitUserSelect: "none", userSelect: "none", contentVisibility: "auto" }}
+                    className="w-full h-auto pointer-events-none"
+                    style={{
+                      WebkitUserSelect: "none",
+                      userSelect: "none",
+                    }}
                     draggable={false}
-                    onLoad={(e) => { (e.currentTarget.previousElementSibling as HTMLElement)?.remove(); }}
                     onContextMenu={(e) => e.preventDefault()}
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                   />
                 </figure>
               ))}
