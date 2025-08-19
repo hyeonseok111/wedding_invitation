@@ -434,7 +434,7 @@ export default function WeddingInvite() {
             <KakaoMapEmbed
               timestamp={KAKAO_SNIPPET_TIMESTAMP}
               mapKey={KAKAO_SNIPPET_KEY}
-              height={490}   // 필요시 380 등으로 조절
+              height={380}   // 필요시 380 등으로 조절
             />
           </div>
 
