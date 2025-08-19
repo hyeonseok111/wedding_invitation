@@ -107,7 +107,57 @@ export default function WeddingInvite() {
     return cells;
   }, []);
 
-  /** 앨범 index.json 로드 (정렬/재배열 없이, 작성된 순서 그대로) */
+  /** 전역: 사진 확대/저장 방지 (지도 제외) */
+  useEffect(() => {
+    const isImageContext = (el: EventTarget | null) => {
+      const node = el as HTMLElement | null;
+      return !!node && (node.tagName === "IMG" || !!node.closest("img,[data-photo]"));
+    };
+
+    const preventMultiTouchOnImg = (e: TouchEvent) => {
+      if (e.touches.length > 1 && isImageContext(e.target)) e.preventDefault();
+    };
+    const preventGestureOnImg = (e: Event) => {
+      if (isImageContext(e.target)) e.preventDefault();
+    };
+    let lastTap = 0;
+    const preventDoubleTapOnImg = (e: TouchEvent) => {
+      if (!isImageContext(e.target)) return;
+      const now = Date.now();
+      if (now - lastTap < 350) e.preventDefault();
+      lastTap = now;
+    };
+    const preventContextOnImg = (e: Event) => {
+      if (isImageContext(e.target)) e.preventDefault();
+    };
+
+    document.addEventListener("touchstart", preventMultiTouchOnImg, { passive: false });
+    document.addEventListener("gesturestart", preventGestureOnImg as any, { passive: false } as any);
+    document.addEventListener("gesturechange", preventGestureOnImg as any, { passive: false } as any);
+    document.addEventListener("gestureend", preventGestureOnImg as any, { passive: false } as any);
+    document.addEventListener("touchend", preventDoubleTapOnImg, { passive: false });
+    document.addEventListener("contextmenu", preventContextOnImg);
+
+    // IMG 공통 저장/선택 방지 스타일
+    const style = document.createElement("style");
+    style.textContent = `
+      img { -webkit-touch-callout: none !important; user-select: none !important; }
+      body { touch-action: manipulation; }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.removeEventListener("touchstart", preventMultiTouchOnImg as any);
+      document.removeEventListener("gesturestart", preventGestureOnImg as any);
+      document.removeEventListener("gesturechange", preventGestureOnImg as any);
+      document.removeEventListener("gestureend", preventGestureOnImg as any);
+      document.removeEventListener("touchend", preventDoubleTapOnImg as any);
+      document.removeEventListener("contextmenu", preventContextOnImg as any);
+      document.head.removeChild(style);
+    };
+  }, []);
+
+  /** 앨범 index.json 로드 */
   const [albumIndex, setAlbumIndex] = useState<AlbumIndex | null>(null);
   const [albumError, setAlbumError] = useState<string | null>(null);
   useEffect(() => {
@@ -117,20 +167,12 @@ export default function WeddingInvite() {
         const res = await fetch("/images/album/index.json", { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as AlbumIndex;
-
         const clean = (data.album || [])
           .filter((f) => typeof f === "string" && f.trim())
           .map((f) => f.trim());
-
-        if (!canceled) {
-          setAlbumIndex({ main: data.main, album: clean });
-          setAlbumError(null);
-        }
+        if (!canceled) { setAlbumIndex({ main: data.main, album: clean }); setAlbumError(null); }
       } catch {
-        if (!canceled) {
-          setAlbumIndex(null);
-          setAlbumError("앨범 목록(index.json)을 불러오지 못했습니다.");
-        }
+        if (!canceled) { setAlbumIndex(null); setAlbumError("앨범 목록(index.json)을 불러오지 못했습니다."); }
       }
     })();
     return () => { canceled = true; };
@@ -145,7 +187,7 @@ export default function WeddingInvite() {
     try { await navigator.clipboard.writeText(txt); alert(`복사되었습니다: ${txt}`); } catch {}
   };
 
-  /** 앨범 뷰어(라이트박스) 상태 (확대 금지 + 스와이프) */
+  /** 앨범 뷰어(확대 금지 + 스와이프) */
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIdx, setViewerIdx] = useState(0);
   const images = albumIndex?.album ?? [];
@@ -159,7 +201,6 @@ export default function WeddingInvite() {
     if (!viewerOpen) return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const prevent = (e: Event) => e.preventDefault();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") closeViewer();
       if (e.key === "ArrowRight") next();
@@ -167,16 +208,10 @@ export default function WeddingInvite() {
     };
     const onWheel = (e: WheelEvent) => { if (e.ctrlKey) e.preventDefault(); };
     window.addEventListener("keydown", onKey);
-    document.addEventListener("gesturestart", prevent as any, { passive: false } as any);
-    document.addEventListener("gesturechange", prevent as any, { passive: false } as any);
-    document.addEventListener("gestureend", prevent as any, { passive: false } as any);
     window.addEventListener("wheel", onWheel, { passive: false });
     return () => {
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", onKey);
-      document.removeEventListener("gesturestart", prevent as any);
-      document.removeEventListener("gesturechange", prevent as any);
-      document.removeEventListener("gestureend", prevent as any);
       window.removeEventListener("wheel", onWheel as any);
     };
   }, [viewerOpen, images.length]);
@@ -242,7 +277,7 @@ export default function WeddingInvite() {
         </div>
       </section>
 
-      {/* 2) 메인 이미지 – object-contain + 고정 비율 */}
+      {/* 2) 메인 이미지 – object-contain + 고정 비율 (저장/확대 차단 오버레이 포함) */}
       <section className="max-w-md mx-auto px-5">
         <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white">
           <div className="relative w-full aspect-[3/4]">
@@ -255,6 +290,8 @@ export default function WeddingInvite() {
                 transition: "opacity .35s ease",
               }}
             />
+            {/* 투명 오버레이: 저장/롱프레스/핀치 차단. data-photo로 이미지 컨텍스트 표시 */}
+            <div className="absolute inset-0" data-photo onContextMenu={(e) => e.preventDefault()} />
             <img
               src={MAIN_IMG}
               alt="메인 웨딩 사진"
@@ -271,6 +308,7 @@ export default function WeddingInvite() {
                 WebkitUserSelect: "none",
                 userSelect: "none",
                 WebkitTouchCallout: "none",
+                pointerEvents: "none",
               }}
               draggable={false}
               onContextMenu={(e) => e.preventDefault()}
@@ -320,7 +358,7 @@ export default function WeddingInvite() {
         </Card>
       </section>
 
-      {/* 3.5) 우디 사진 – object-contain + 고정 비율 */}
+      {/* 3.5) 우디 사진 – object-contain + 고정 비율 (오버레이 포함) */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white">
           <div className="relative w-full aspect-[3/4]">
@@ -333,6 +371,7 @@ export default function WeddingInvite() {
                 transition: "opacity .35s ease",
               }}
             />
+            <div className="absolute inset-0" data-photo onContextMenu={(e) => e.preventDefault()} />
             <img
               src="/images/album/woody_25_06_13_069994.JPG"
               alt="우디 사진"
@@ -349,6 +388,7 @@ export default function WeddingInvite() {
                 WebkitUserSelect: "none",
                 userSelect: "none",
                 WebkitTouchCallout: "none",
+                pointerEvents: "none",
               }}
               draggable={false}
               onContextMenu={(e) => e.preventDefault()}
@@ -369,7 +409,7 @@ export default function WeddingInvite() {
       {/* 5) 달력 + D-day */}
       <CalendarCard days={days} cells={dec2025Cells} highlight={THEME.hl} dDay={dDay} />
 
-      {/* 6) 오시는 길 + 카카오 지도 + 외부 버튼 */}
+      {/* 6) 오시는 길 + 카카오 지도 + 외부 버튼 (지도는 확대 가능) */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <Card className="text-center">
           <h2 className="font-semibold mb-1.5" style={{ color: THEME.hl, fontSize: "clamp(15px,4vw,17px)" }}>
@@ -391,6 +431,7 @@ export default function WeddingInvite() {
           </div>
 
           <div className="mt-5 rounded-2xl overflow-hidden shadow-sm border" style={{ borderColor: THEME.line }}>
+            {/* 지도는 IMG가 아니므로 전역 차단의 영향 없음 → 확대/축소 동작 */}
             <KakaoMapEmbed
               timestamp={KAKAO_SNIPPET_TIMESTAMP}
               mapKey={KAKAO_SNIPPET_KEY}
@@ -431,6 +472,7 @@ export default function WeddingInvite() {
                 onClick={() => openViewer(idx)}
                 onKeyDown={(e) => (e.key === "Enter" ? openViewer(idx) : null)}
               >
+                {/* 클릭은 figure에, 이미지는 상호작용 차단 */}
                 <img
                   src={`/images/album/${file}`}
                   alt={`album-${idx}`}
@@ -465,7 +507,7 @@ export default function WeddingInvite() {
         </Card>
       </section>
 
-      {/* ── 풀스크린 앨범 뷰어 (확대 금지) ── */}
+      {/* ── 풀스크린 앨범 뷰어 (확대 금지 + 저장 억제) ── */}
       {viewerOpen && images.length > 0 && (
         <div
           className="fixed inset-0 z-50 bg-black/90 text-white flex items-center justify-center"
@@ -497,13 +539,16 @@ export default function WeddingInvite() {
             ›
           </button>
 
+          {/* 투명 오버레이로 이미지 직접 상호작용 차단 */}
+          <div className="absolute inset-0" data-photo onContextMenu={(e) => e.preventDefault()} />
+
           <img
             src={`/images/album/${images[viewerIdx]}`}
             alt={`album-view-${viewerIdx}`}
             className="max-w-[96vw] max-h-[85vh] object-contain"
             draggable={false}
             onContextMenu={(e) => e.preventDefault()}
-            style={{ WebkitUserSelect: "none", userSelect: "none" }}
+            style={{ WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none", pointerEvents: "none" }}
           />
 
           <div className="absolute bottom-4 text-sm opacity-80">
@@ -777,16 +822,28 @@ function SmsIcon(props: React.SVGProps<SVGSVGElement>) { return (
     <path d="M7 9h10M7 13h6" strokeWidth="1.8" strokeLinecap="round" />
   </svg>
 );}
-/** 네이버/카카오 지도 아이콘 (공식 스타일 느낌) */
+
+/** 네이버 지도 아이콘 (첨부 이미지 스타일) 24x24 */
 function NaverOfficialIcon(props: React.HTMLAttributes<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 24 24" aria-label="네이버 지도" {...props}>
-      <line x1="6" y1="19" x2="21" y2="17" stroke="#1E6EFF" strokeWidth="3.6" strokeLinecap="round" />
-      <path d="M12 3c-3.866 0-7 3.134-7 7 0 4.3 3.48 7.82 6.02 10.37.54.55 1.42.55 1.96 0C15.52 17.82 19 14.3 19 10c0-3.866-3.134-7-7-7Z" fill="#03C75A" />
-      <path d="M9 7h2.6l3 4.7V7H16v7h-2.6l-3-4.7V14H9V7Z" fill="#FFFFFF" />
+    <svg viewBox="0 0 24 24" width={24} height={24} aria-label="네이버 지도" {...props}>
+      {/* 하단 파란 바 */}
+      <rect x="3" y="18" width="18" height="4" rx="2" fill="#1E6EFF" />
+      {/* 녹색 핀 모양 */}
+      <path
+        d="M12 2.5c-3.866 0-7 3.134-7 7 0 4.3 3.48 7.82 6.02 10.37.54.55 1.42.55 1.96 0C15.52 17.32 19 13.8 19 9.5c0-3.866-3.134-7-7-7Z"
+        fill="#03C75A"
+      />
+      {/* 흰색 N */}
+      <path
+        d="M8.8 6.9h2.55l2.85 4.48V6.9h1.9v7.2h-2.55L10.7 9.62v4.48H8.8V6.9z"
+        fill="#FFFFFF"
+      />
     </svg>
   );
 }
+
+/** 카카오 지도 아이콘 (기존과 동일 24x24 박스) */
 function KakaoMapOfficialIcon(props: React.HTMLAttributes<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" aria-label="카카오 지도" {...props}>
