@@ -16,11 +16,11 @@ const VENUE_NAME = "아펠가모 공덕 라로브홀";
 const VENUE_ADDR = "서울 마포구 마포대로 92 효성해링턴스퀘어 B동 7층";
 const VENUE_TEL = "02-2197-0230";
 
-/** 카카오 roughmap 퍼가기 키 (요청값으로 갱신) */
+/** 카카오 roughmap 퍼가기 키(스니펫 미사용, 컴포넌트에서 사용) */
 const KAKAO_EMBED_TIMESTAMP = "1755605224737";
 const KAKAO_EMBED_KEY = "7ntjrdjuwid";
 
-/** 외부 맵 단축 링크 */
+/** 외부 맵 단축 링크(바로 열기) */
 const NAVER_PLACE_SHORT = "https://naver.me/xmBt7BeP";
 const KAKAO_PLACE_SHORT = "https://kko.kakao.com/9oelYjxw4s";
 
@@ -145,7 +145,7 @@ export default function WeddingInvite() {
       if (e.key === "ArrowRight") next();
       if (e.key === "ArrowLeft") prev();
     };
-    const onWheel = (e: WheelEvent) => { if (e.ctrlKey) e.preventDefault(); }; // Ctrl+휠 확대 방지
+    const onWheel = (e: WheelEvent) => { if (e.ctrlKey) e.preventDefault(); };
 
     window.addEventListener("keydown", onKey);
     document.addEventListener("gesturestart", prevent as any, { passive: false } as any);
@@ -171,7 +171,6 @@ export default function WeddingInvite() {
     const now = Date.now();
     if (now - lastTouchEnd.current <= 350) e.preventDefault(); // 더블탭 확대 방지
     lastTouchEnd.current = now;
-
     if (touchStartX.current == null) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     touchStartX.current = null;
@@ -204,7 +203,7 @@ export default function WeddingInvite() {
               style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(22px, 5vw, 32px)", fontWeight: 500 }}>
             이&nbsp;현&nbsp;석
           </h1>
-          <div className="text-center mx-3 select-none">
+        <div className="text-center mx-3 select-none">
             <div className="leading-none" style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(40px, 10.5vw, 72px)" }}>{mm}</div>
             <div className="w-9 mx-auto my-1 border-t" style={{ borderColor: "#DADADA" }} />
             <div className="leading-none" style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(40px, 10.5vw, 72px)" }}>{dd}</div>
@@ -270,7 +269,7 @@ export default function WeddingInvite() {
         </Card>
       </section>
 
-      {/* 3.5) 우디 사진 — 메인 이미지처럼, 시+초대문과 연락 라인 사이 */}
+      {/* 3.5) 우디 사진 — 시+초대문과 연락 라인 사이 */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white relative h-[44svh]">
           <div className="absolute inset-0 animate-pulse"
@@ -303,7 +302,7 @@ export default function WeddingInvite() {
       {/* 5) 달력 + D-day */}
       <CalendarCard days={days} cells={dec2025Cells} highlight={THEME.hl} dDay={dDay} />
 
-      {/* 6) 오시는 길 + 지도/앱 (카카오 실시간 지도 포함) */}
+      {/* 6) 오시는 길 + 실시간 카카오 지도 + 외부 버튼 */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <Card className="text-center">
           <h2 className="font-semibold mb-1.5" style={{ color: THEME.hl, fontSize: "clamp(15px,4vw,17px)" }}>
@@ -322,7 +321,7 @@ export default function WeddingInvite() {
             </a>
           </div>
 
-          {/* 실시간 카카오 지도 (핀치줌/드래그 가능) */}
+          {/* 실시간 카카오 지도(핀치줌/드래그 가능) */}
           <div className="mt-5 rounded-2xl overflow-hidden shadow-sm border"
                style={{ borderColor: THEME.line }}>
             <KakaoRoughMap
@@ -333,7 +332,7 @@ export default function WeddingInvite() {
             />
           </div>
 
-          {/* 지도 바로가기: 네이버/카카오 */}
+          {/* 지도 바로가기 버튼 */}
           <div className="mt-5 grid grid-cols-2 gap-3">
             <AppLink label="네이버 지도" href={NAVER_PLACE_SHORT}>
               <NaverOfficialIcon className="w-5 h-5" />
@@ -400,7 +399,7 @@ export default function WeddingInvite() {
         </Card>
       </section>
 
-      {/* ── 풀스크린 앨범 뷰어 (확대 불가) ── */}
+      {/* ── 풀스크린 앨범 뷰어 (확대 금지) ── */}
       {viewerOpen && images.length > 0 && (
         <div
           className="fixed inset-0 z-50 bg-black/90 text-white flex items-center justify-center"
@@ -444,46 +443,114 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
 }
 function Divider() { return <div className="my-3 h-px" style={{ background: THEME.line }} />; }
 
-/** Kakao roughmap embed — HTML 스니펫을 React로 구현 */
+/** Kakao roughmap embed — 스니펫 없이 견고하게 초기화 */
 function KakaoRoughMap({
-  timestamp, mapKey, width = "100%", height = 380,
-}: { timestamp: string; mapKey: string; width?: number | string; height?: number | string; }) {
+  timestamp,
+  mapKey,
+  width = "100%",
+  height = 380,
+}: {
+  timestamp: string;
+  mapKey: string;
+  width?: number | string;
+  height?: number | string;
+}) {
   const containerId = `daumRoughmapContainer${timestamp}`;
   const hostRef = useRef<HTMLDivElement | null>(null);
+  const initedRef = useRef(false);
 
   useEffect(() => {
-    const LOADER_CLASS = "daum_roughmap_loader_script";
+    let disposed = false;
+
+    // 1) 로더 스크립트 준비 대기
     const ensureLoader = () =>
       new Promise<void>((resolve) => {
-        if ((window as any).daum?.roughmap?.Lander) { resolve(); return; }
+        const ready = () =>
+          (window as any).daum?.roughmap?.Lander ? resolve() : null;
+
+        if ((window as any).daum?.roughmap?.Lander) {
+          resolve();
+          return;
+        }
+
+        const existing = document.querySelector<HTMLScriptElement>(
+          "script.daum_roughmap_loader_script"
+        );
+        if (existing) {
+          const iv = setInterval(() => {
+            if ((window as any).daum?.roughmap?.Lander) {
+              clearInterval(iv);
+              resolve();
+            }
+          }, 50);
+          return;
+        }
+
         const s = document.createElement("script");
         s.src = "https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js";
         s.charset = "UTF-8";
-        s.className = LOADER_CLASS;
-        s.onload = () => resolve();
-        document.body.appendChild(s);
+        s.className = "daum_roughmap_loader_script";
+        s.onload = () => ready();
+        document.head.appendChild(s);
       });
 
-    let disposed = false;
-    const run = async () => {
+    // 2) 컨테이너 보장
+    const ensureContainer = () => {
+      if (!hostRef.current) return;
+      let inner = hostRef.current.querySelector<HTMLDivElement>(
+        `#${CSS.escape(containerId)}`
+      );
+      if (!inner) {
+        inner = document.createElement("div");
+        inner.id = containerId;
+        inner.className = "root_daum_roughmap root_daum_roughmap_landing";
+        hostRef.current.appendChild(inner);
+      } else {
+        inner.innerHTML = "";
+      }
+      // 크기 보장
+      hostRef.current.style.minHeight =
+        typeof height === "number" ? `${height}px` : String(height);
+    };
+
+    const render = async () => {
+      if (disposed || initedRef.current) return;
+      ensureContainer();
       await ensureLoader();
       if (disposed) return;
-      const lander = new (window as any).daum.roughmap.Lander({
-        timestamp, key: mapKey,
-        mapWidth: typeof width === "number" ? `${width}px` : width,
-        mapHeight: typeof height === "number" ? `${height}px` : height,
-      });
-      lander.render();
-    };
-    run();
 
+      try {
+        const lander = new (window as any).daum.roughmap.Lander({
+          timestamp,
+          key: mapKey,
+          mapWidth: typeof width === "number" ? `${width}px` : width,
+          mapHeight: typeof height === "number" ? `${height}px` : height,
+        });
+        lander.render();
+        initedRef.current = true;
+      } catch {
+        // 로더 직후 레이스 컨디션 대응 1회 재시도
+        setTimeout(() => {
+          if (disposed || initedRef.current) return;
+          try {
+            const lander = new (window as any).daum.roughmap.Lander({
+              timestamp,
+              key: mapKey,
+              mapWidth: typeof width === "number" ? `${width}px` : width,
+              mapHeight: typeof height === "number" ? `${height}px` : height,
+            });
+            lander.render();
+            initedRef.current = true;
+          } catch {}
+        }, 120);
+      }
+    };
+
+    render();
     return () => { disposed = true; };
   }, [timestamp, mapKey, width, height]);
 
-  return (
-    <div id={containerId} ref={hostRef}
-         className="root_daum_roughmap root_daum_roughmap_landing" />
-  );
+  return <div ref={hostRef} />;
 }
 
 /** 연락행 */
@@ -605,7 +672,7 @@ function AccountList({ accounts, onCopy }: { accounts: { bank: string; number: s
   );
 }
 
-/** 지도 링크 버튼 (앵커) */
+/** 지도 링크 버튼 */
 function AppLink({ label, href, children }: { label: string; href: string; children: React.ReactNode }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer"
