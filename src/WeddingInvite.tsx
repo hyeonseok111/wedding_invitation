@@ -431,12 +431,10 @@ export default function WeddingInvite() {
           </div>
 
           <div className="mt-5 rounded-2xl overflow-hidden shadow-sm border" style={{ borderColor: THEME.line }}>
-            {/* 지도는 IMG가 아니므로 전역 차단의 영향 없음 → 확대/축소 동작 */}
-            <
+            <KakaoMapEmbed
               timestamp={KAKAO_SNIPPET_TIMESTAMP}
               mapKey={KAKAO_SNIPPET_KEY}
-              width="100%"
-              height={380}
+              height={490}   // 필요시 380 등으로 조절
             />
           </div>
 
