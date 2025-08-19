@@ -268,7 +268,7 @@ export default function WeddingInvite() {
             <img
               src={MAIN_IMG}
               alt="메인 웨딩 사진"
-              className="absolute inset-0 w-full h-full object-contain"   {/* ← 변경: cover → contain */}
+              className="absolute inset-0 w-full h-full object-contain"
               loading="eager"
               decoding="async"
               fetchPriority="high"
