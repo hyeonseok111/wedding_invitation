@@ -17,8 +17,8 @@ const VENUE_ADDR = "서울 마포구 마포대로 92 효성해링턴스퀘어 B�
 const VENUE_TEL = "02-2197-0230";
 
 /** 카카오 퍼가기(스니펫) 값 */
-const KAKAO_SNIPPET_TIMESTAMP = "1755608173506";
-const KAKAO_SNIPPET_KEY = "7aafu24dufz";
+const KAKAO_SNIPPET_TIMESTAMP = "1755617224442";
+const KAKAO_SNIPPET_KEY = "7agv8awu965";
 
 /** 외부 맵 단축 링크 */
 const NAVER_PLACE_SHORT = "https://naver.me/xmBt7BeP";
@@ -432,7 +432,7 @@ export default function WeddingInvite() {
 
           <div className="mt-5 rounded-2xl overflow-hidden shadow-sm border" style={{ borderColor: THEME.line }}>
             {/* 지도는 IMG가 아니므로 전역 차단의 영향 없음 → 확대/축소 동작 */}
-            <KakaoMapEmbed
+            <
               timestamp={KAKAO_SNIPPET_TIMESTAMP}
               mapKey={KAKAO_SNIPPET_KEY}
               width="100%"
@@ -571,51 +571,27 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
 }
 function Divider() { return <div className="my-3 h-px" style={{ background: THEME.line }} />; }
 
-/** 퍼가기 스니펫을 리액트에서 실행 (인터랙티브 전용, 폴백 없음) */
+/** 카카오 퍼가기(RoughMap) – SDK 없이 인터랙티브 지도 */
 function KakaoMapEmbed({
   timestamp,
   mapKey,
-  height = 380,
+  height = 490, // 스니펫 기준 높이
 }: {
   timestamp: string;
   mapKey: string;
   height?: number;
 }) {
-  const hostRef = useRef<HTMLDivElement | null>(null);
+  const hostRef = React.useRef<HTMLDivElement | null>(null);
 
-  // roughmap 로더 준비
-  const ensureLoader = () =>
-    new Promise<void>((resolve) => {
-      if ((window as any).daum?.roughmap?.Lander) return resolve();
-      const existing = document.querySelector<HTMLScriptElement>(
-        "script.daum_roughmap_loader_script"
-      );
-      if (existing) {
-        const iv = setInterval(() => {
-          if ((window as any).daum?.roughmap?.Lander) {
-            clearInterval(iv);
-            resolve();
-          }
-        }, 50);
-        return;
-      }
-      const s = document.createElement("script");
-      s.src = "https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js";
-      s.charset = "UTF-8";
-      s.className = "daum_roughmap_loader_script";
-      s.onload = () => resolve();
-      document.head.appendChild(s);
-    });
-
-  // 실제 렌더 함수
-  const renderMap = async () => {
+  React.useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
 
-    // px 단위 폭 측정 (최소 300)
-    const widthPx = Math.max(300, Math.floor(host.clientWidth || 0)) || 504;
+    // 1) px 폭 측정 (퍼가기는 %폭 전달 시 실패 사례가 있음)
+    const widthPx = Math.max(300, Math.floor(host.getBoundingClientRect().width || 0)) || 360;
+    host.style.minHeight = `${height}px`;
 
-    // 컨테이너 초기화/재생성
+    // 2) 컨테이너 초기화/재생성
     host.innerHTML = "";
     const containerId = `daumRoughmapContainer${timestamp}`;
     const inner = document.createElement("div");
@@ -623,63 +599,46 @@ function KakaoMapEmbed({
     inner.className = "root_daum_roughmap root_daum_roughmap_landing";
     host.appendChild(inner);
 
-    // 고정 높이
-    host.style.minHeight = `${height}px`;
-
-    await ensureLoader();
-
-    // RoughMap은 문자열 숫자 선호
-    const lander = new (window as any).daum.roughmap.Lander({
-      timestamp,
-      key: mapKey,
-      mapWidth: String(widthPx),
-      mapHeight: String(height),
-    });
-    lander.render();
-  };
-
-  useEffect(() => {
-    let disposed = false;
-    (async () => {
+    // 3) 로더 준비 → 렌더
+    const run = () => {
       try {
-        await renderMap();
+        new (window as any).daum.roughmap.Lander({
+          timestamp,
+          key: mapKey,
+          mapWidth: String(widthPx),     // ← px 문자열
+          mapHeight: String(height),     // ← px 문자열
+        }).render();
       } catch (e) {
-        console.error("[KakaoMapEmbed] render failed:", e);
+        console.error("[RoughMap] render error:", e);
       }
-    })();
-
-    // 리사이즈 대응(폭 변경 시 재렌더)
-    let raf: number | null = null;
-    const ro =
-      "ResizeObserver" in window
-        ? new ResizeObserver(() => {
-            if (raf) cancelAnimationFrame(raf);
-            raf = requestAnimationFrame(() => {
-              if (!disposed) renderMap();
-            });
-          })
-        : null;
-
-    if (ro && hostRef.current) ro.observe(hostRef.current);
-
-    const onResize = () => {
-      if (raf) cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        if (!disposed) renderMap();
-      });
     };
-    window.addEventListener("resize", onResize);
 
-    return () => {
-      disposed = true;
-      if (raf) cancelAnimationFrame(raf);
-      window.removeEventListener("resize", onResize);
-      ro?.disconnect();
-    };
-    // timestamp/mapKey/height 변경 시 재렌더
+    const w = window as any;
+    if (w.daum?.roughmap?.Lander) {
+      run();
+      return;
+    }
+
+    const existing = document.querySelector<HTMLScriptElement>("script.daum_roughmap_loader_script");
+    if (existing) {
+      const iv = setInterval(() => {
+        if ((window as any).daum?.roughmap?.Lander) {
+          clearInterval(iv);
+          run();
+        }
+      }, 50);
+      return () => clearInterval(iv);
+    }
+
+    const s = document.createElement("script");
+    s.src = "https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js";
+    s.charset = "UTF-8";
+    s.className = "daum_roughmap_loader_script";
+    s.onload = run;
+    document.head.appendChild(s);
   }, [timestamp, mapKey, height]);
 
-  return <div ref={hostRef} />;
+  return <div ref={hostRef} style={{ width: "100%" }} />;
 }
 
 /** 연락행 */
