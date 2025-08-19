@@ -16,9 +16,9 @@ const VENUE_NAME = "아펠가모 공덕 라로브홀";
 const VENUE_ADDR = "서울 마포구 마포대로 92 효성해링턴스퀘어 B동 7층";
 const VENUE_TEL = "02-2197-0230";
 
-/** 카카오 roughmap 퍼가기 키 */
-const KAKAO_EMBED_TIMESTAMP = "1755523431572";
-const KAKAO_EMBED_KEY = "7m3ejw8zpmp";
+/** 카카오 roughmap 퍼가기 키 (요청값으로 갱신) */
+const KAKAO_EMBED_TIMESTAMP = "1755605224737";
+const KAKAO_EMBED_KEY = "7ntjrdjuwid";
 
 /** 외부 맵 단축 링크 */
 const NAVER_PLACE_SHORT = "https://naver.me/xmBt7BeP";
@@ -148,10 +148,9 @@ export default function WeddingInvite() {
     const onWheel = (e: WheelEvent) => { if (e.ctrlKey) e.preventDefault(); }; // Ctrl+휠 확대 방지
 
     window.addEventListener("keydown", onKey);
-    // iOS Safari 제스처 확대 방지
-    document.addEventListener("gesturestart", prevent, { passive: false } as any);
-    document.addEventListener("gesturechange", prevent, { passive: false } as any);
-    document.addEventListener("gestureend", prevent, { passive: false } as any);
+    document.addEventListener("gesturestart", prevent as any, { passive: false } as any);
+    document.addEventListener("gesturechange", prevent as any, { passive: false } as any);
+    document.addEventListener("gestureend", prevent as any, { passive: false } as any);
     window.addEventListener("wheel", onWheel, { passive: false });
 
     return () => {
@@ -179,8 +178,9 @@ export default function WeddingInvite() {
     if (Math.abs(dx) > 50) { dx < 0 ? next() : prev(); }
   };
 
-  /** 메인 이미지 로딩 애니메이션 */
+  /** 메인/우디 이미지 로딩 애니메이션 */
   const [mainLoaded, setMainLoaded] = useState(false);
+  const [woodyLoaded, setWoodyLoaded] = useState(false);
 
   /** 렌더 */
   return (
@@ -222,17 +222,8 @@ export default function WeddingInvite() {
       {/* 2) 메인 이미지 — 스켈레톤 + 페이드/슬라이드 인 */}
       <section className="max-w-md mx-auto px-5">
         <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white relative h-[48svh]">
-          {/* skeleton */}
-          <div
-            className="absolute inset-0 animate-pulse"
-            style={{
-              background:
-                "linear-gradient(90deg, #f5ece7 25%, #f0e6e0 37%, #f5ece7 63%)",
-              backgroundSize: "400% 100%",
-              opacity: mainLoaded ? 0 : 1,
-              transition: "opacity .35s ease",
-            }}
-          />
+          <div className="absolute inset-0 animate-pulse"
+               style={{ background:"linear-gradient(90deg, #f5ece7 25%, #f0e6e0 37%, #f5ece7 63%)", backgroundSize:"400% 100%", opacity: mainLoaded ? 0 : 1, transition: "opacity .35s ease" }} />
           <img
             src={MAIN_IMG}
             alt="메인 웨딩 사진"
@@ -241,15 +232,8 @@ export default function WeddingInvite() {
             decoding="async"
             fetchPriority="high"
             onLoad={() => setMainLoaded(true)}
-            style={{
-              opacity: mainLoaded ? 1 : 0,
-              transform: mainLoaded ? "translateY(0px)" : "translateY(6px)",
-              transition: "opacity .42s ease, transform .42s ease",
-              contentVisibility: "auto",
-              WebkitUserSelect: "none",
-              userSelect: "none",
-              WebkitTouchCallout: "none",
-            }}
+            style={{ opacity: mainLoaded ? 1 : 0, transform: mainLoaded ? "translateY(0px)" : "translateY(6px)", transition: "opacity .42s ease, transform .42s ease",
+                     contentVisibility: "auto", WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }}
             draggable={false}
             onContextMenu={(e) => e.preventDefault()}
           />
@@ -282,23 +266,34 @@ export default function WeddingInvite() {
             <p className="mt-1.5">하루하루의 마음이 저희의 계절을 만들었으니</p>
             <p className="mt-1.5">함께 오셔서 따뜻히 축복해 주시면 감사하겠습니다.</p>
           </div>
-          {/* ⛔️ 날짜/장소 라인 제거 요청 반영 */}
+          {/* 날짜/장소 라인 제거 */}
         </Card>
       </section>
 
-      {/* 4) 연락 라인 (신랑 사진 추가) */}
-      <section className="max-w-md mx-auto px-5 mt-5">
+      {/* 3.5) 우디 사진 — 메인 이미지처럼, 시+초대문과 연락 라인 사이 */}
+      <section className="max-w-md mx-auto px-5 mt-6">
+        <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white relative h-[44svh]">
+          <div className="absolute inset-0 animate-pulse"
+               style={{ background:"linear-gradient(90deg, #f5ece7 25%, #f0e6e0 37%, #f5ece7 63%)", backgroundSize:"400% 100%", opacity: woodyLoaded ? 0 : 1, transition: "opacity .35s ease" }} />
+          <img
+            src="/images/album/woody_25_06_13_069994.JPG"
+            alt="우디 사진"
+            className="absolute inset-0 w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
+            fetchPriority="low"
+            onLoad={() => setWoodyLoaded(true)}
+            style={{ opacity: woodyLoaded ? 1 : 0, transform: woodyLoaded ? "translateY(0px)" : "translateY(6px)", transition: "opacity .42s ease, transform .42s ease",
+                     contentVisibility: "auto", WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }}
+            draggable={false}
+            onContextMenu={(e) => e.preventDefault()}
+          />
+        </figure>
+      </section>
+
+      {/* 4) 연락 라인 */}
+      <section className="max-w-md mx-auto px-5 mt-6">
         <Card>
-          <figure className="rounded-xl overflow-hidden mb-4">
-            <img
-              src="/images/album/woody_25_06_13_069994.JPG"
-              alt="신랑 측 사진"
-              className="w-full h-48 object-cover"
-              draggable={false}
-              onContextMenu={(e) => e.preventDefault()}
-              style={{ WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }}
-            />
-          </figure>
           <ContactRow label={GROOM_LINE} tel={GROOM_TEL} />
           <Divider />
           <ContactRow label={BRIDE_LINE} tel={BRIDE_TEL} />
@@ -308,7 +303,7 @@ export default function WeddingInvite() {
       {/* 5) 달력 + D-day */}
       <CalendarCard days={days} cells={dec2025Cells} highlight={THEME.hl} dDay={dDay} />
 
-      {/* 6) 오시는 길 + 지도/앱 */}
+      {/* 6) 오시는 길 + 지도/앱 (카카오 실시간 지도 포함) */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <Card className="text-center">
           <h2 className="font-semibold mb-1.5" style={{ color: THEME.hl, fontSize: "clamp(15px,4vw,17px)" }}>
@@ -325,6 +320,17 @@ export default function WeddingInvite() {
                style={{ background: THEME.ink, color: "#fff", borderColor: "transparent" }}>
               <PhoneIcon width={16} height={16} /> 안내 전화
             </a>
+          </div>
+
+          {/* 실시간 카카오 지도 (핀치줌/드래그 가능) */}
+          <div className="mt-5 rounded-2xl overflow-hidden shadow-sm border"
+               style={{ borderColor: THEME.line }}>
+            <KakaoRoughMap
+              timestamp={KAKAO_EMBED_TIMESTAMP}
+              mapKey={KAKAO_EMBED_KEY}
+              width="100%"
+              height={380}
+            />
           </div>
 
           {/* 지도 바로가기: 네이버/카카오 */}
@@ -401,81 +407,46 @@ export default function WeddingInvite() {
           onClick={closeViewer}
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
-          style={{
-            WebkitTouchCallout: "none",
-            WebkitUserSelect: "none",
-            userSelect: "none",
-            touchAction: "pan-y",          // 핀치 확대 방지 + 세로 스크롤만
-            overscrollBehavior: "contain", // iOS 튕김 방지
-          }}
+          style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none", touchAction: "pan-y", overscrollBehavior: "contain" }}
           onContextMenu={(e) => e.preventDefault()}
         >
-          {/* 닫기 */}
-          <button
-            onClick={(e) => { e.stopPropagation(); closeViewer(); }}
-            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/15 backdrop-blur flex items-center justify-center"
-            aria-label="닫기"
-          >
-            ×
-          </button>
+          <button onClick={(e) => { e.stopPropagation(); closeViewer(); }}
+                  className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/15 backdrop-blur flex items-center justify-center"
+                  aria-label="닫기">×</button>
+          <button onClick={(e) => { e.stopPropagation(); prev(); }}
+                  className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 backdrop-blur flex items-center justify-center"
+                  aria-label="이전 사진">‹</button>
+          <button onClick={(e) => { e.stopPropagation(); next(); }}
+                  className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 backdrop-blur flex items-center justify-center"
+                  aria-label="다음 사진">›</button>
 
-          {/* 좌/우 */}
-          <button
-            onClick={(e) => { e.stopPropagation(); prev(); }}
-            className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 backdrop-blur flex items-center justify-center"
-            aria-label="이전 사진"
-          >
-            ‹
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); next(); }}
-            className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 backdrop-blur flex items-center justify-center"
-            aria-label="다음 사진"
-          >
-            ›
-          </button>
+          <img src={`/images/album/${images[viewerIdx]}`} alt={`album-view-${viewerIdx}`}
+               className="max-w-[96vw] max-h-[85vh] object-contain" draggable={false}
+               onContextMenu={(e) => e.preventDefault()}
+               style={{ WebkitUserSelect: "none", userSelect: "none" }} />
 
-          {/* 이미지 (확대 금지) */}
-          <img
-            src={`/images/album/${images[viewerIdx]}`}
-            alt={`album-view-${viewerIdx}`}
-            className="max-w-[96vw] max-h-[85vh] object-contain"
-            draggable={false}
-            onContextMenu={(e) => e.preventDefault()}
-            style={{ WebkitUserSelect: "none", userSelect: "none" }}
-          />
-
-          {/* 페이지 인디케이터 */}
-          <div className="absolute bottom-4 text-sm opacity-80">
-            {viewerIdx + 1} / {images.length}
-          </div>
+          <div className="absolute bottom-4 text-sm opacity-80">{viewerIdx + 1} / {images.length}</div>
         </div>
       )}
     </main>
   );
 }
 
-/* ───────── 공통 컴포넌트 ───────── */
+/* ───────── 공통 컴포넌트/유틸 ───────── */
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div
-      className={`rounded-[20px] shadow-sm p-6 bg-white ${className}`}
-      style={{
-        background: THEME.card,
-        contentVisibility: "auto",
-        containIntrinsicSize: "600px",
-      }}
-    >
+    <div className={`rounded-[20px] shadow-sm p-6 bg-white ${className}`}
+         style={{ background: THEME.card, contentVisibility: "auto", containIntrinsicSize: "600px" }}>
       {children}
     </div>
   );
 }
 function Divider() { return <div className="my-3 h-px" style={{ background: THEME.line }} />; }
 
-/** Kakao roughmap embed — 보이기 직전에 로드 */
+/** Kakao roughmap embed — HTML 스니펫을 React로 구현 */
 function KakaoRoughMap({
-  timestamp, mapKey, width = "100%", height = 360,
+  timestamp, mapKey, width = "100%", height = 380,
 }: { timestamp: string; mapKey: string; width?: number | string; height?: number | string; }) {
   const containerId = `daumRoughmapContainer${timestamp}`;
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -485,13 +456,6 @@ function KakaoRoughMap({
     const ensureLoader = () =>
       new Promise<void>((resolve) => {
         if ((window as any).daum?.roughmap?.Lander) { resolve(); return; }
-        const existing = document.querySelector(`script.${LOADER_CLASS}`);
-        if (existing) {
-          const iv = setInterval(() => {
-            if ((window as any).daum?.roughmap?.Lander) { clearInterval(iv); resolve(); }
-          }, 50);
-          return;
-        }
         const s = document.createElement("script");
         s.src = "https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js";
         s.charset = "UTF-8";
@@ -501,37 +465,24 @@ function KakaoRoughMap({
       });
 
     let disposed = false;
-    let observed = false;
+    const run = async () => {
+      await ensureLoader();
+      if (disposed) return;
+      const lander = new (window as any).daum.roughmap.Lander({
+        timestamp, key: mapKey,
+        mapWidth: typeof width === "number" ? `${width}px` : width,
+        mapHeight: typeof height === "number" ? `${height}px` : height,
+      });
+      lander.render();
+    };
+    run();
 
-    const io = new IntersectionObserver(
-      async (entries) => {
-        if (observed || disposed) return;
-        if (!entries[0]?.isIntersecting) return;
-        observed = true;
-        await ensureLoader();
-        if (disposed) return;
-        const lander = new (window as any).daum.roughmap.Lander({
-          timestamp, key: mapKey,
-          mapWidth: typeof width === "number" ? `${width}px` : width,
-          mapHeight: typeof height === "number" ? `${height}px` : height,
-        });
-        lander.render();
-        io.disconnect();
-      },
-      { root: null, rootMargin: "200px 0px", threshold: 0.01 }
-    );
-
-    if (hostRef.current) io.observe(hostRef.current);
-    return () => { disposed = true; io.disconnect(); };
+    return () => { disposed = true; };
   }, [timestamp, mapKey, width, height]);
 
   return (
-    <div
-      ref={hostRef}
-      id={containerId}
-      className="root_daum_roughmap root_daum_roughmap_landing"
-      style={{ containIntrinsicSize: "360px 100%", contentVisibility: "auto" }}
-    />
+    <div id={containerId} ref={hostRef}
+         className="root_daum_roughmap root_daum_roughmap_landing" />
   );
 }
 
@@ -562,7 +513,6 @@ function CalendarCard({
   days, cells, highlight, dDay,
 }: { days: string[]; cells: (number | null)[]; highlight: string; dDay: number; }) {
   const label = dDay > 0 ? `${dDay}일 전` : dDay === 0 ? "오늘" : `${Math.abs(dDay)}일 지남`;
-
   return (
     <section className="max-w-md mx-auto px-5 mt-6">
       <Card>
@@ -573,11 +523,8 @@ function CalendarCard({
         <div className="grid grid-cols-7 gap-3 text-center mt-2" style={{ fontSize: "clamp(15px,4vw,18px)" }}>
           {cells.map((n, i) =>
             n === null ? <div key={i} /> : (
-              <div
-                key={i}
-                className={`w-10 h-10 mx-auto flex items-center justify-center rounded-full ${n === 7 ? "text-white font-bold" : "text-gray-800"}`}
-                style={n === 7 ? { backgroundColor: highlight } : {}}
-              >{n}</div>
+              <div key={i} className={`w-10 h-10 mx-auto flex items-center justify-center rounded-full ${n === 7 ? "text-white font-bold" : "text-gray-800"}`}
+                   style={n === 7 ? { backgroundColor: highlight } : {}}>{n}</div>
             )
           )}
         </div>
@@ -627,7 +574,7 @@ function InfoBlock({ title, highlight, children }: { title: string; highlight: s
   );
 }
 
-/** 아코디언 */
+/** 아코디언/계좌 */
 function Accordion({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
@@ -661,70 +608,54 @@ function AccountList({ accounts, onCopy }: { accounts: { bank: string; number: s
 /** 지도 링크 버튼 (앵커) */
 function AppLink({ label, href, children }: { label: string; href: string; children: React.ReactNode }) {
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="w-full h-12 rounded-xl bg-white border shadow-sm flex items-center justify-center gap-2 text-[13.5px] font-medium transition active:scale-[0.98]"
-      style={{ borderColor: THEME.line }}
-    >
-      {children}
-      <span>{label}</span>
+    <a href={href} target="_blank" rel="noopener noreferrer"
+       className="w-full h-12 rounded-xl bg-white border shadow-sm flex items-center justify-center gap-2 text-[13.5px] font-medium transition active:scale-[0.98]"
+       style={{ borderColor: THEME.line }}>
+      {children}<span>{label}</span>
     </a>
   );
 }
 
 /** 아이콘들 */
-function SpeakerOn(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" {...props}>
-      <path fill="currentColor" d="M11 5.5c0-.6-.7-.9-1.1-.5L6.8 8H4.5A1.5 1.5 0 0 0 3 9.5v5A1.5 1.5 0 0 0 4.5 16H6.8l3.1 3c.4.4 1.1.1 1.1-.5V5.5z" />
-      <path d="M16 9a3 3 0 0 1 0 6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
-      <path d="M18 7a6 6 0 0 1 0 10" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
-    </svg>
-  );
-}
-function SpeakerOff(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" {...props}>
-      <path fill="currentColor" d="M11 5.5c0-.6-.7-.9-1.1-.5L6.8 8H4.5A1.5 1.5 0 0 0 3 9.5v5A1.5 1.5 0 0 0 4.5 16H6.8l3.1 3c.4.4 1.1.1 1.1-.5V5.5z" />
-      <line x1="15" y1="9" x2="21" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <line x1="21" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-function PhoneIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" d="M22 16.5v3a2 2 0 0 1-2.2 2A19.5 19.5 0 0 1 2.5 4.2 2 2 0 0 1 4.5 2h3a2 2 0 0 1 2 1.7c.12.8.32 1.6.58 2.4a2 2 0 0 1-.44 2.1L9 10a16 16 0 0 0 5 5l.7-1.1a2 2 0 0 1 2.1-.45c.8.26 1.6.46 2.4.58A2 2 0 0 1 22 16.5z" />
-    </svg>
-  );
-}
-function SmsIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <rect x="3" y="4" width="18" height="14" rx="3" strokeWidth="1.8" />
-      <path d="M7 9h10M7 13h6" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
+function SpeakerOn(props: React.SVGProps<SVGSVGElement>) { return (
+  <svg viewBox="0 0 24 24" {...props}>
+    <path fill="currentColor" d="M11 5.5c0-.6-.7-.9-1.1-.5L6.8 8H4.5A1.5 1.5 0 0 0 3 9.5v5A1.5 1.5 0 0 0 4.5 16H6.8l3.1 3c.4.4 1.1.1 1.1-.5V5.5z" />
+    <path d="M16 9a3 3 0 0 1 0 6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
+    <path d="M18 7a6 6 0 0 1 0 10" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
+  </svg>
+);}
+function SpeakerOff(props: React.SVGProps<SVGSVGElement>) { return (
+  <svg viewBox="0 0 24 24" {...props}>
+    <path fill="currentColor" d="M11 5.5c0-.6-.7-.9-1.1-.5L6.8 8H4.5A1.5 1.5 0 0 0 3 9.5v5A1.5 1.5 0 0 0 4.5 16H6.8l3.1 3c.4.4 1.1.1 1.1-.5V5.5z" />
+    <line x1="15" y1="9" x2="21" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <line x1="21" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);}
+function PhoneIcon(props: React.SVGProps<SVGSVGElement>) { return (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+    <path strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+          d="M22 16.5v3a2 2 0 0 1-2.2 2A19.5 19.5 0 0 1 2.5 4.2 2 2 0 0 1 4.5 2h3a2 2 0 0 1 2 1.7c.12.8.32 1.6.58 2.4a2 2 0 0 1-.44 2.1L9 10a16 16 0 0 0 5 5l.7-1.1a2 2 0 0 1 2.1-.45c.8.26 1.6.46 2.4.58A2 2 0 0 1 22 16.5z" />
+  </svg>
+);}
+function SmsIcon(props: React.SVGProps<SVGSVGElement>) { return (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+    <rect x="3" y="4" width="18" height="14" rx="3" strokeWidth="1.8" />
+    <path d="M7 9h10M7 13h6" strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);}
 /** 네이버/카카오 지도 아이콘 */
-function NaverOfficialIcon(props: React.HTMLAttributes<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" {...props}>
-      <rect width="24" height="24" rx="5" fill="#03C75A" />
-      <path d="M8 6h3.2l4.8 7.4V6H18v12h-3.2L10 10.6V18H8V6z" fill="#fff" />
-    </svg>
-  );
-}
-function KakaoMapOfficialIcon(props: React.HTMLAttributes<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" {...props}>
-      <rect width="24" height="24" rx="5" fill="#FFE812" />
-      <g transform="translate(4 3)">
-        <path d="M8 0a6 6 0 0 1 6 6c0 3.7-3.4 7-6 9.5C5.4 13 2 9.7 2 6a6 6 0 0 1 6-6z" fill="#2F80ED"/>
-        <circle cx="8" cy="6" r="2.2" fill="#27AE60"/>
-      </g>
-    </svg>
-  );
-}
+function NaverOfficialIcon(props: React.HTMLAttributes<SVGSVGElement>) { return (
+  <svg viewBox="0 0 24 24" {...props}>
+    <rect width="24" height="24" rx="5" fill="#03C75A" />
+    <path d="M8 6h3.2l4.8 7.4V6H18v12h-3.2L10 10.6V18H8V6z" fill="#fff" />
+  </svg>
+);}
+function KakaoMapOfficialIcon(props: React.HTMLAttributes<SVGSVGElement>) { return (
+  <svg viewBox="0 0 24 24" {...props}>
+    <rect width="24" height="24" rx="5" fill="#FFE812" />
+    <g transform="translate(4 3)">
+      <path d="M8 0a6 6 0 0 1 6 6c0 3.7-3.4 7-6 9.5C5.4 13 2 9.7 2 6a6 6 0 0 1 6-6z" fill="#2F80ED"/>
+      <circle cx="8" cy="6" r="2.2" fill="#27AE60"/>
+    </g>
+  </svg>
+);}
