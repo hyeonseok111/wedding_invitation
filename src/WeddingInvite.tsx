@@ -20,8 +20,9 @@ const VENUE_TEL = "02-2197-0230";
 const KAKAO_EMBED_TIMESTAMP = "1755523431572";
 const KAKAO_EMBED_KEY = "7m3ejw8zpmp";
 
-/** 앱 버튼 검색어 */
-const MAP_QUERY = "아펠가모 공덕";
+/** 외부 맵 링크(단축 URL) */
+const NAVER_PLACE_SHORT = "https://naver.me/xmBt7BeP";        // 네이버 지도 바로가기
+const KAKAO_PLACE_SHORT = "https://kko.kakao.com/9oelYjxw4s"; // 카카오 지도 바로가기
 
 /** 연락처/계좌 */
 const GROOM_LINE = "이영철 · 이경희 의 아들 현석";
@@ -62,14 +63,8 @@ export default function WeddingInvite() {
     const a = audioRef.current;
     if (!a) return;
     if (a.paused) {
-      try {
-        await a.play();
-        setIsPlaying(true);
-      } catch {}
-    } else {
-      a.pause();
-      setIsPlaying(false);
-    }
+      try { await a.play(); setIsPlaying(true); } catch {}
+    } else { a.pause(); setIsPlaying(false); }
   };
 
   /** 날짜 파생 */
@@ -82,28 +77,20 @@ export default function WeddingInvite() {
   useEffect(() => {
     const update = () => setDDay(daysUntil(WEDDING_ISO));
     const now = new Date();
-    const nextMidnight = new Date(now);
-    nextMidnight.setHours(24, 0, 0, 0);
+    const nextMidnight = new Date(now); nextMidnight.setHours(24, 0, 0, 0);
     const toMidnight = nextMidnight.getTime() - now.getTime();
-
     let intervalId: number | undefined;
     const timeoutId = window.setTimeout(() => {
-      update();
-      intervalId = window.setInterval(update, 86400000);
+      update(); intervalId = window.setInterval(update, 86400000);
     }, toMidnight);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      if (intervalId) window.clearInterval(intervalId);
-    };
+    return () => { window.clearTimeout(timeoutId); if (intervalId) window.clearInterval(intervalId); };
   }, []);
 
   /** 2025-12 달력 */
   const days = ["일", "월", "화", "수", "목", "금", "토"];
   const dec2025Cells = useMemo(() => {
     const first = new Date("2025-12-01T00:00:00+09:00");
-    const firstDay = first.getDay();
-    const total = 31;
+    const firstDay = first.getDay(), total = 31;
     const cells: (number | null)[] = [];
     for (let i = 0; i < firstDay; i++) cells.push(null);
     for (let d = 1; d <= total; d++) cells.push(d);
@@ -120,64 +107,33 @@ export default function WeddingInvite() {
         const res = await fetch("/images/album/index.json", { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as AlbumIndex;
-
-        const sortedUnique = Array.from(
-          new Set(
-            [...data.album]
-              .filter((f) => f && typeof f === "string")
-              .map((f) => f.trim())
-              .filter(Boolean)
-          )
-        ).sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
-
-        if (!canceled) {
-          setAlbumIndex({ main: data.main, album: sortedUnique });
-          setAlbumError(null);
-        }
+        const sortedUnique = Array.from(new Set(
+          [...data.album].filter((f) => f && typeof f === "string").map((f) => f.trim()).filter(Boolean)
+        )).sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+        if (!canceled) { setAlbumIndex({ main: data.main, album: sortedUnique }); setAlbumError(null); }
       } catch {
-        if (!canceled) {
-          setAlbumIndex(null);
-          setAlbumError("앨범 목록(index.json)을 불러오지 못했습니다.");
-        }
+        if (!canceled) { setAlbumIndex(null); setAlbumError("앨범 목록(index.json)을 불러오지 못했습니다."); }
       }
     })();
-    return () => {
-      canceled = true;
-    };
+    return () => { canceled = true; };
   }, []);
 
-  const MAIN_IMG = albumIndex
-    ? `/images/album/${albumIndex.main}`
-    : "/images/album/Bloom_25_06_13_073904.JPG";
+  const MAIN_IMG = albumIndex ? `/images/album/${albumIndex.main}` : "/images/album/Bloom_25_06_13_073904.JPG";
 
   /** 복사 */
-  const copy = async (txt: string) => {
-    try {
-      await navigator.clipboard.writeText(txt);
-      alert(`복사되었습니다: ${txt}`);
-    } catch {}
-  };
+  const copy = async (txt: string) => { try { await navigator.clipboard.writeText(txt); alert(`복사되었습니다: ${txt}`); } catch {} };
 
   /** 렌더 */
   return (
     <main className="min-h-screen font-sans" style={{ background: THEME.bg, color: THEME.ink }}>
-      {/* 상단 그라데이션 (합성 레이어 힌트) */}
-      <div
-        className="fixed inset-x-0 top-0 h-24 pointer-events-none -z-0"
-        style={{
-          background: "linear-gradient(180deg, rgba(214,120,120,0.10), rgba(214,120,120,0))",
-          willChange: "transform",
-        }}
-      />
+      {/* 상단 그라데이션 */}
+      <div className="fixed inset-x-0 top-0 h-24 pointer-events-none -z-0"
+           style={{ background: "linear-gradient(180deg, rgba(214,120,120,0.10), rgba(214,120,120,0))", willChange:"transform" }} />
 
-      {/* BGM 토글 (회색 원 + 흰색 아이콘) */}
-      <button
-        onClick={toggleBgm}
-        aria-label={isPlaying ? "배경음악 일시정지" : "배경음악 재생"}
-        aria-pressed={isPlaying}
-        className="fixed right-3.5 top-3.5 z-20 w-11 h-11 rounded-full shadow-md flex items-center justify-center transition active:scale-95"
-        style={{ background: "#9b9b9b", color: "#fff" }}
-      >
+      {/* BGM 토글 */}
+      <button onClick={toggleBgm} aria-label={isPlaying ? "배경음악 일시정지" : "배경음악 재생"} aria-pressed={isPlaying}
+              className="fixed right-3.5 top-3.5 z-20 w-11 h-11 rounded-full shadow-md flex items-center justify-center transition active:scale-95"
+              style={{ background: "#9b9b9b", color: "#fff" }}>
         {isPlaying ? <SpeakerOn width={20} height={20} /> : <SpeakerOff width={20} height={20} />}
       </button>
       <audio ref={audioRef} src={BGM_SRC} preload="none" loop className="hidden" />
@@ -185,48 +141,30 @@ export default function WeddingInvite() {
       {/* 1) 대형 타이포 배너 */}
       <section className="max-w-md mx-auto px-5 pt-10 pb-5">
         <div className="flex items-end justify-between">
-          <h1
-            className="tracking-[0.2em]"
-            style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(22px, 5vw, 32px)", fontWeight: 500 }}
-          >
+          <h1 className="tracking-[0.2em]"
+              style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(22px, 5vw, 32px)", fontWeight: 500 }}>
             이&nbsp;현&nbsp;석
           </h1>
-
           <div className="text-center mx-3 select-none">
-            <div className="leading-none" style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(40px, 10.5vw, 72px)" }}>
-              {mm}
-            </div>
+            <div className="leading-none" style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(40px, 10.5vw, 72px)" }}>{mm}</div>
             <div className="w-9 mx-auto my-1 border-t" style={{ borderColor: "#DADADA" }} />
-            <div className="leading-none" style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(40px, 10.5vw, 72px)" }}>
-              {dd}
-            </div>
+            <div className="leading-none" style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(40px, 10.5vw, 72px)" }}>{dd}</div>
           </div>
-
-          <h1
-            className="tracking-[0.2em] text-right"
-            style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(22px, 5vw, 32px)", fontWeight: 500 }}
-          >
+          <h1 className="tracking-[0.2em] text-right"
+              style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(22px, 5vw, 32px)", fontWeight: 500 }}>
             유&nbsp;지&nbsp;현
           </h1>
         </div>
-
         <p className="mt-3 text-center text-gray-600" style={{ fontSize: "clamp(12px, 2.6vw, 13.5px)" }}>
           2025년 12월 7일 일요일 15:30 · {VENUE_NAME}
         </p>
       </section>
 
-      {/* 2) 메인 이미지 — 첫 화면이므로 eager + high priority */}
+      {/* 2) 메인 이미지 — eager + priority */}
       <section className="max-w-md mx-auto px-5">
         <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white">
-          <img
-            src={MAIN_IMG}
-            alt="메인 웨딩 사진"
-            className="w-full h-[48svh] object-cover"
-            loading="eager"
-            decoding="async"
-            fetchPriority="high"
-            style={{ contentVisibility: "auto" }}
-          />
+          <img src={MAIN_IMG} alt="메인 웨딩 사진" className="w-full h-[48svh] object-cover"
+               loading="eager" decoding="async" fetchPriority="high" style={{ contentVisibility: "auto" }} />
         </figure>
       </section>
 
@@ -239,11 +177,8 @@ export default function WeddingInvite() {
             </div>
           </div>
 
-          {/* 시 */}
-          <div
-            className="mt-4 text-gray-800"
-            style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(16px, 3.7vw, 20px)", lineHeight: 1.85 }}
-          >
+          <div className="mt-4 text-gray-800"
+               style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(16px, 3.7vw, 20px)", lineHeight: 1.85 }}>
             <p>장담하건대, 세상이 다 겨울이어도</p>
             <p className="mt-1.5">우리 사랑은 늘봄처럼 따뜻하고</p>
             <p className="mt-1.5">간혹, 여름처럼 뜨거울 겁니다</p>
@@ -252,10 +187,7 @@ export default function WeddingInvite() {
 
           <div className="my-6 h-px" style={{ background: "#eee" }} />
 
-          {/* 초대문 */}
-          <h3 className="tracking-[0.35em] text-gray-500" style={{ fontSize: "clamp(11px, 2.6vw, 13px)" }}>
-            INVITATION
-          </h3>
+          <h3 className="tracking-[0.35em] text-gray-500" style={{ fontSize: "clamp(11px, 2.6vw, 13px)" }}>INVITATION</h3>
           <div className="mt-4 text-gray-900" style={{ fontSize: "clamp(16px, 3.6vw, 20px)", lineHeight: 1.85 }}>
             <p>사랑이 봄처럼 시작되어</p>
             <p className="mt-1.5">겨울의 약속으로 이어집니다.</p>
@@ -288,60 +220,25 @@ export default function WeddingInvite() {
             오시는 길
           </h2>
           <p className="font-bold" style={{ fontSize: "clamp(14.5px,3.8vw,16px)" }}>{VENUE_NAME}</p>
-          <p className="mt-1 text-gray-700" style={{ fontSize: "clamp(13px,3.2vw,14px)" }}>
-            {VENUE_ADDR}
-          </p>
+          <p className="mt-1 text-gray-700" style={{ fontSize: "clamp(13px,3.2vw,14px)" }}>{VENUE_ADDR}</p>
 
           <div className="mt-3">
-            <a
-              href={`tel:${VENUE_TEL.replace(/[^0-9]/g, "")}`}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition border"
-              style={{ background: THEME.ink, color: "#fff", borderColor: "transparent" }}
-            >
+            <a href={`tel:${VENUE_TEL.replace(/[^0-9]/g, "")}`}
+               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition border"
+               style={{ background: THEME.ink, color: "#fff", borderColor: "transparent" }}>
               <PhoneIcon width={16} height={16} /> 안내 전화
             </a>
           </div>
 
-          <div className="mt-5 rounded-2xl overflow-hidden shadow-sm border" style={{ borderColor: THEME.line }}>
-            <KakaoRoughMap timestamp={KAKAO_EMBED_TIMESTAMP} mapKey={KAKAO_EMBED_KEY} width="100%" height={360} />
-          </div>
-
-          <div className="mt-5 grid grid-cols-3 gap-3">
-            <AppButton
-              label="네이버 지도"
-              onClick={() =>
-                openWithFallback(
-                  `nmap://search?query=${encodeURIComponent(MAP_QUERY)}`,
-                  `https://map.naver.com/v5/search/${encodeURIComponent(MAP_QUERY)}`
-                )
-              }
-            >
+          {/* ✅ 지도 바로가기: 네이버/카카오 단축 링크 사용, 2열 그리드 */}
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <AppLink label="네이버 지도" href={NAVER_PLACE_SHORT}>
               <NaverIcon className="w-5 h-5" />
-            </AppButton>
+            </AppLink>
 
-            <AppButton
-              label="카카오 내비"
-              onClick={() =>
-                openWithFallback(
-                  `kakaomap://search?q=${encodeURIComponent(MAP_QUERY)}`,
-                  `https://map.kakao.com/?q=${encodeURIComponent(MAP_QUERY)}`
-                )
-              }
-            >
+            <AppLink label="카카오 지도" href={KAKAO_PLACE_SHORT}>
               <KakaoIcon className="w-5 h-5" />
-            </AppButton>
-
-            <AppButton
-              label="티맵"
-              onClick={() =>
-                openWithFallback(
-                  `tmap://search?name=${encodeURIComponent(MAP_QUERY)}`,
-                  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(MAP_QUERY)}`
-                )
-              }
-            >
-              <TmapIcon className="w-5 h-5" />
-            </AppButton>
+            </AppLink>
           </div>
         </Card>
       </section>
@@ -409,8 +306,8 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
       className={`rounded-[20px] shadow-sm p-6 bg-white ${className}`}
       style={{
         background: THEME.card,
-        contentVisibility: "auto",         // 뷰포트 밖 지연 페인트
-        containIntrinsicSize: "600px",     // 자리 확보 (레이아웃 점프 방지)
+        contentVisibility: "auto",
+        containIntrinsicSize: "600px",
       }}
     >
       {children}
@@ -440,17 +337,11 @@ function KakaoRoughMap({
     const LOADER_CLASS = "daum_roughmap_loader_script";
     const ensureLoader = () =>
       new Promise<void>((resolve) => {
-        if ((window as any).daum?.roughmap?.Lander) {
-          resolve();
-          return;
-        }
+        if ((window as any).daum?.roughmap?.Lander) { resolve(); return; }
         const existing = document.querySelector(`script.${LOADER_CLASS}`);
         if (existing) {
           const iv = setInterval(() => {
-            if ((window as any).daum?.roughmap?.Lander) {
-              clearInterval(iv);
-              resolve();
-            }
+            if ((window as any).daum?.roughmap?.Lander) { clearInterval(iv); resolve(); }
           }, 50);
           return;
         }
@@ -485,10 +376,7 @@ function KakaoRoughMap({
     );
 
     if (hostRef.current) io.observe(hostRef.current);
-    return () => {
-      disposed = true;
-      io.disconnect();
-    };
+    return () => { disposed = true; io.disconnect(); };
   }, [timestamp, mapKey, width, height]);
 
   return (
@@ -508,22 +396,14 @@ function ContactRow({ label, tel }: { label: string; tel: string }) {
     <div className="flex items-center justify-between gap-3">
       <p className="text-[14.5px]">{label}</p>
       <div className="flex items-center gap-2">
-        <a
-          href={`tel:${digits}`}
-          aria-label="전화 걸기"
-          title="전화 걸기"
-          className="w-10 h-10 rounded-full bg-white border shadow flex items-center justify-center text-gray-700"
-          style={{ borderColor: THEME.line }}
-        >
+        <a href={`tel:${digits}`} aria-label="전화 걸기" title="전화 걸기"
+           className="w-10 h-10 rounded-full bg-white border shadow flex items-center justify-center text-gray-700"
+           style={{ borderColor: THEME.line }}>
           <PhoneIcon width={18} height={18} />
         </a>
-        <a
-          href={`sms:${digits}`}
-          aria-label="문자 보내기"
-          title="문자 보내기"
-          className="w-10 h-10 rounded-full bg-white border shadow flex items-center justify-center"
-          style={{ color: THEME.hl, borderColor: THEME.line }}
-        >
+        <a href={`sms:${digits}`} aria-label="문자 보내기" title="문자 보내기"
+           className="w-10 h-10 rounded-full bg-white border shadow flex items-center justify-center"
+           style={{ color: THEME.hl, borderColor: THEME.line }}>
           <SmsIcon width={18} height={18} />
         </a>
       </div>
@@ -656,17 +536,19 @@ function AccountList({
   );
 }
 
-/** 앱 버튼 */
-function AppButton({ label, children, onClick }: { label: string; children: React.ReactNode; onClick: () => void }) {
+/** 지도 링크 버튼 (앵커) */
+function AppLink({ label, href, children }: { label: string; href: string; children: React.ReactNode }) {
   return (
-    <button
-      onClick={onClick}
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
       className="w-full h-12 rounded-xl bg-white border shadow-sm flex items-center justify-center gap-2 text-[13.5px] font-medium transition active:scale-[0.98]"
       style={{ borderColor: THEME.line }}
     >
       {children}
       <span>{label}</span>
-    </button>
+    </a>
   );
 }
 
@@ -719,31 +601,4 @@ function KakaoIcon(props: React.HTMLAttributes<SVGSVGElement>) {
       <path d="M12 6.5c-3.3 0-6 2-6 4.6 0 1.7 1.1 3.2 2.9 4l-.6 2.4a.5.5 0 0 0 .8.5l2.7-1.7c.07 0 .27.1.2.1 3.3 0 6-2.1 6-4.7S15.3 6.5 12 6.5z" fill="#381E1F" />
     </svg>
   );
-}
-function TmapIcon(props: React.HTMLAttributes<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" {...props}>
-      <rect width="24" height="24" rx="4" fill="#E31E2D" />
-      <path d="M7 12a5 5 0 0 1 10 0c0 2.8-2.7 5.5-5 7.5-2.3-2-5-4.7-5-7.5z" fill="#fff" />
-      <circle cx="12" cy="12" r="2.2" fill="#E31E2D" />
-    </svg>
-  );
-}
-
-/** 앱 스킴 시도 → 실패 시 웹 폴백 */
-function openWithFallback(appUrl: string, webUrl: string) {
-  const start = Date.now();
-  const t = setTimeout(() => {
-    if (Date.now() - start < 1500) window.location.href = webUrl;
-  }, 800);
-
-  const iframe = document.createElement("iframe");
-  iframe.style.display = "none";
-  iframe.src = appUrl;
-  document.body.appendChild(iframe);
-
-  setTimeout(() => {
-    clearTimeout(t);
-    if (document.body.contains(iframe)) document.body.removeChild(iframe);
-  }, 2500);
 }
