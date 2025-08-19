@@ -431,7 +431,7 @@ export default function WeddingInvite() {
           </div>
 
           <div className="mt-5 rounded-2xl overflow-hidden shadow-sm border" style={{ borderColor: THEME.line }}>
-            <KakaoMapEmbed
+            <
               timestamp={KAKAO_SNIPPET_TIMESTAMP}
               mapKey={KAKAO_SNIPPET_KEY}
               height={380}   // 필요시 380 등으로 조절
@@ -569,7 +569,7 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
 }
 function Divider() { return <div className="my-3 h-px" style={{ background: THEME.line }} />; }
 
-/** 카카오 퍼가기(RoughMap) – SDK 없이 인터랙티브 지도 */
+/** 카카오 퍼가기(RoughMap) – 안정화 버전 */
 function KakaoMapEmbed({
   timestamp,
   mapKey,
@@ -581,59 +581,94 @@ function KakaoMapEmbed({
 }) {
   const hostRef = React.useRef<HTMLDivElement | null>(null);
 
-  React.useEffect(() => {
+  // 전역 1회 로더 Promise (StrictMode 중복 방지)
+  function ensureLoader(): Promise<void> {
+    const w = window as any;
+    if (w.__roughmapReady) return w.__roughmapReady;
+    w.__roughmapReady = new Promise<void>((resolve) => {
+      const ready = () => (window as any).daum?.roughmap?.Lander && resolve();
+      if ((window as any).daum?.roughmap?.Lander) return resolve();
+
+      const existing = document.querySelector<HTMLScriptElement>("script.daum_roughmap_loader_script");
+      if (existing) {
+        const iv = setInterval(() => {
+          if ((window as any).daum?.roughmap?.Lander) { clearInterval(iv); resolve(); }
+        }, 50);
+        return;
+      }
+      const s = document.createElement("script");
+      s.src = "https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js";
+      s.charset = "UTF-8";
+      s.className = "daum_roughmap_loader_script";
+      s.onload = ready;
+      document.head.appendChild(s);
+    });
+    return w.__roughmapReady;
+  }
+
+  // 실제 렌더
+  async function renderOnce() {
     const host = hostRef.current;
     if (!host) return;
 
-    // 1) px 폭 측정 (퍼가기는 %폭 전달 시 실패 사례가 있음)
-    const widthPx = Math.max(300, Math.floor(host.getBoundingClientRect().width || 0)) || 360;
-    host.style.minHeight = `${height}px`;
+    // 1) 폭(px) 확정: 0 나오면 다음 프레임/타임아웃에서 재측정
+    let widthPx = Math.floor(host.clientWidth);
+    if (!widthPx || widthPx < 10) {
+      await new Promise((r) => requestAnimationFrame(r));
+      widthPx = Math.floor(host.clientWidth);
+      if (!widthPx || widthPx < 10) widthPx = 360; // 최종 안전값
+    }
+    widthPx = Math.max(300, widthPx); // 최소 보정
 
-    // 2) 컨테이너 초기화/재생성
+    // 2) 컨테이너 초기화 + 사이즈 지정(러프맵이 이 값도 참조)
     host.innerHTML = "";
+    host.style.position = "relative";
+    host.style.minHeight = `${height}px`;
     const containerId = `daumRoughmapContainer${timestamp}`;
     const inner = document.createElement("div");
     inner.id = containerId;
     inner.className = "root_daum_roughmap root_daum_roughmap_landing";
+    inner.style.width = `${widthPx}px`;
+    inner.style.height = `${height}px`;
     host.appendChild(inner);
 
     // 3) 로더 준비 → 렌더
-    const run = () => {
-      try {
-        new (window as any).daum.roughmap.Lander({
-          timestamp,
-          key: mapKey,
-          mapWidth: String(widthPx),     // ← px 문자열
-          mapHeight: String(height),     // ← px 문자열
-        }).render();
-      } catch (e) {
-        console.error("[RoughMap] render error:", e);
-      }
+    await ensureLoader();
+    new (window as any).daum.roughmap.Lander({
+      timestamp,
+      key: mapKey,
+      mapWidth: String(widthPx),
+      mapHeight: String(height),
+    }).render();
+  }
+
+  React.useEffect(() => {
+    let disposed = false;
+    (async () => { if (!disposed) await renderOnce(); })();
+
+    // 폭 변화에 반응해 재렌더(모바일 회전/리사이즈)
+    let raf: number | null = null;
+    const ro =
+      "ResizeObserver" in window
+        ? new ResizeObserver(() => {
+            if (raf) cancelAnimationFrame(raf);
+            raf = requestAnimationFrame(() => { if (!disposed) renderOnce(); });
+          })
+        : null;
+    if (ro && hostRef.current) ro.observe(hostRef.current);
+
+    const onResize = () => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => { if (!disposed) renderOnce(); });
     };
+    window.addEventListener("resize", onResize);
 
-    const w = window as any;
-    if (w.daum?.roughmap?.Lander) {
-      run();
-      return;
-    }
-
-    const existing = document.querySelector<HTMLScriptElement>("script.daum_roughmap_loader_script");
-    if (existing) {
-      const iv = setInterval(() => {
-        if ((window as any).daum?.roughmap?.Lander) {
-          clearInterval(iv);
-          run();
-        }
-      }, 50);
-      return () => clearInterval(iv);
-    }
-
-    const s = document.createElement("script");
-    s.src = "https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js";
-    s.charset = "UTF-8";
-    s.className = "daum_roughmap_loader_script";
-    s.onload = run;
-    document.head.appendChild(s);
+    return () => {
+      disposed = true;
+      if (raf) cancelAnimationFrame(raf);
+      ro?.disconnect();
+      window.removeEventListener("resize", onResize);
+    };
   }, [timestamp, mapKey, height]);
 
   return <div ref={hostRef} style={{ width: "100%" }} />;
