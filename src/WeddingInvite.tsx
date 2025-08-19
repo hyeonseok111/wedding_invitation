@@ -133,29 +133,54 @@ export default function WeddingInvite() {
   const next = () => setViewerIdx((i) => (i + 1) % images.length);
   const prev = () => setViewerIdx((i) => (i - 1 + images.length) % images.length);
 
-  // 스크롤 잠금 + 키보드
+  // 스크롤 잠금 + 키보드 + 확대(핀치/휠/제스처) 금지
   useEffect(() => {
     if (!viewerOpen) return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
+    const prevent = (e: Event) => e.preventDefault();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") closeViewer();
       if (e.key === "ArrowRight") next();
       if (e.key === "ArrowLeft") prev();
     };
+    const onWheel = (e: WheelEvent) => { if (e.ctrlKey) e.preventDefault(); }; // Ctrl+휠 확대 방지
+
     window.addEventListener("keydown", onKey);
-    return () => { document.body.style.overflow = prevOverflow; window.removeEventListener("keydown", onKey); };
+    // iOS Safari 제스처 확대 방지
+    document.addEventListener("gesturestart", prevent, { passive: false } as any);
+    document.addEventListener("gesturechange", prevent, { passive: false } as any);
+    document.addEventListener("gestureend", prevent, { passive: false } as any);
+    window.addEventListener("wheel", onWheel, { passive: false });
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("gesturestart", prevent as any);
+      document.removeEventListener("gesturechange", prevent as any);
+      document.removeEventListener("gestureend", prevent as any);
+      window.removeEventListener("wheel", onWheel as any);
+    };
   }, [viewerOpen, images.length]);
 
-  // 터치 스와이프
+  // 터치 스와이프 + 더블탭 확대 방지
   const touchStartX = useRef<number | null>(null);
+  const lastTouchEnd = useRef<number>(0);
   const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
   const onTouchEnd = (e: React.TouchEvent) => {
+    const now = Date.now();
+    if (now - lastTouchEnd.current <= 350) e.preventDefault(); // 더블탭 확대 방지
+    lastTouchEnd.current = now;
+
     if (touchStartX.current == null) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     touchStartX.current = null;
     if (Math.abs(dx) > 50) { dx < 0 ? next() : prev(); }
   };
+
+  /** 메인 이미지 로딩 애니메이션 */
+  const [mainLoaded, setMainLoaded] = useState(false);
 
   /** 렌더 */
   return (
@@ -194,17 +219,32 @@ export default function WeddingInvite() {
         </p>
       </section>
 
-      {/* 2) 메인 이미지 — eager + priority */}
+      {/* 2) 메인 이미지 — 스켈레톤 + 페이드/슬라이드 인 */}
       <section className="max-w-md mx-auto px-5">
-        <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white">
+        <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white relative h-[48svh]">
+          {/* skeleton */}
+          <div
+            className="absolute inset-0 animate-pulse"
+            style={{
+              background:
+                "linear-gradient(90deg, #f5ece7 25%, #f0e6e0 37%, #f5ece7 63%)",
+              backgroundSize: "400% 100%",
+              opacity: mainLoaded ? 0 : 1,
+              transition: "opacity .35s ease",
+            }}
+          />
           <img
             src={MAIN_IMG}
             alt="메인 웨딩 사진"
-            className="w-full h-[48svh] object-cover"
+            className="absolute inset-0 w-full h-full object-cover"
             loading="eager"
             decoding="async"
             fetchPriority="high"
+            onLoad={() => setMainLoaded(true)}
             style={{
+              opacity: mainLoaded ? 1 : 0,
+              transform: mainLoaded ? "translateY(0px)" : "translateY(6px)",
+              transition: "opacity .42s ease, transform .42s ease",
               contentVisibility: "auto",
               WebkitUserSelect: "none",
               userSelect: "none",
@@ -242,16 +282,23 @@ export default function WeddingInvite() {
             <p className="mt-1.5">하루하루의 마음이 저희의 계절을 만들었으니</p>
             <p className="mt-1.5">함께 오셔서 따뜻히 축복해 주시면 감사하겠습니다.</p>
           </div>
-
-          <div className="mt-6 text-[12.5px] text-gray-600">
-            2025년 12월 7일 일요일 오후 3시 30분 · {VENUE_NAME}
-          </div>
+          {/* ⛔️ 날짜/장소 라인 제거 요청 반영 */}
         </Card>
       </section>
 
-      {/* 4) 연락 라인 */}
+      {/* 4) 연락 라인 (신랑 사진 추가) */}
       <section className="max-w-md mx-auto px-5 mt-5">
         <Card>
+          <figure className="rounded-xl overflow-hidden mb-4">
+            <img
+              src="/images/album/woody_25_06_13_069994.JPG"
+              alt="신랑 측 사진"
+              className="w-full h-48 object-cover"
+              draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
+              style={{ WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }}
+            />
+          </figure>
           <ContactRow label={GROOM_LINE} tel={GROOM_TEL} />
           <Divider />
           <ContactRow label={BRIDE_LINE} tel={BRIDE_TEL} />
@@ -280,7 +327,7 @@ export default function WeddingInvite() {
             </a>
           </div>
 
-          {/* 지도 바로가기: 네이버/카카오, 공식 느낌 아이콘 사용 */}
+          {/* 지도 바로가기: 네이버/카카오 */}
           <div className="mt-5 grid grid-cols-2 gap-3">
             <AppLink label="네이버 지도" href={NAVER_PLACE_SHORT}>
               <NaverOfficialIcon className="w-5 h-5" />
@@ -295,7 +342,7 @@ export default function WeddingInvite() {
       {/* 7) 교통/주차/안내 */}
       <InfoSections highlight={THEME.hl} />
 
-      {/* 8) 앨범 */}
+      {/* 8) 앨범 (썸네일 + 라이트박스) */}
       <section className="max-w-md mx-auto px-5 mt-6" onContextMenu={(e) => e.preventDefault()}>
         <Card>
           <h3 className="text-center font-semibold mb-3" style={{ color: THEME.hl, fontSize: "clamp(15px,4vw,17px)" }}>
@@ -347,14 +394,20 @@ export default function WeddingInvite() {
         </Card>
       </section>
 
-      {/* ── 풀스크린 앨범 뷰어 ── */}
+      {/* ── 풀스크린 앨범 뷰어 (확대 불가) ── */}
       {viewerOpen && images.length > 0 && (
         <div
           className="fixed inset-0 z-50 bg-black/90 text-white flex items-center justify-center"
           onClick={closeViewer}
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
-          style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none" }}
+          style={{
+            WebkitTouchCallout: "none",
+            WebkitUserSelect: "none",
+            userSelect: "none",
+            touchAction: "pan-y",          // 핀치 확대 방지 + 세로 스크롤만
+            overscrollBehavior: "contain", // iOS 튕김 방지
+          }}
           onContextMenu={(e) => e.preventDefault()}
         >
           {/* 닫기 */}
@@ -382,13 +435,14 @@ export default function WeddingInvite() {
             ›
           </button>
 
-          {/* 이미지 */}
+          {/* 이미지 (확대 금지) */}
           <img
             src={`/images/album/${images[viewerIdx]}`}
             alt={`album-view-${viewerIdx}`}
             className="max-w-[96vw] max-h-[85vh] object-contain"
             draggable={false}
             onContextMenu={(e) => e.preventDefault()}
+            style={{ WebkitUserSelect: "none", userSelect: "none" }}
           />
 
           {/* 페이지 인디케이터 */}
@@ -654,8 +708,7 @@ function SmsIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
-
-/** 네이버 지도 공식 느낌 아이콘 */
+/** 네이버/카카오 지도 아이콘 */
 function NaverOfficialIcon(props: React.HTMLAttributes<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" {...props}>
@@ -664,8 +717,6 @@ function NaverOfficialIcon(props: React.HTMLAttributes<SVGSVGElement>) {
     </svg>
   );
 }
-
-/** 카카오 지도 공식 느낌 아이콘(노란 배경 + 파란 핀) */
 function KakaoMapOfficialIcon(props: React.HTMLAttributes<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" {...props}>
