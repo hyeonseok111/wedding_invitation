@@ -229,9 +229,16 @@ export default function WeddingInvite() {
     if (Math.abs(dx) > 50) { dx < 0 ? next() : prev(); }
   };
 
-  /** 메인/우디 이미지 로딩 상태 */
+  /** 메인 이미지 로딩 연출 상태 */
   const [mainLoaded, setMainLoaded] = useState(false);
-  const [woodyLoaded, setWoodyLoaded] = useState(false);
+  const [curtainOn, setCurtainOn] = useState(true);
+  const CURTAIN_MIN_MS = 550;
+  const curtainStartAt = useRef<number>(performance.now());
+  function endCurtainAfterMin() {
+    const elapsed = performance.now() - curtainStartAt.current;
+    const remain = Math.max(0, CURTAIN_MIN_MS - elapsed);
+    window.setTimeout(() => setCurtainOn(false), remain);
+  }
 
   /** 렌더 */
   return (
@@ -263,7 +270,7 @@ export default function WeddingInvite() {
           >
             이&nbsp;현&nbsp;석
           </h1>
-          <div className="text-center mx-3 select-none">
+        <div className="text-center mx-3 select-none">
             <div className="leading-none" style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(40px, 10.5vw, 72px)" }}>{mm}</div>
             <div className="w-9 mx-auto my-1 border-t" style={{ borderColor: "#DADADA" }} />
             <div className="leading-none" style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(40px, 10.5vw, 72px)" }}>{dd}</div>
@@ -277,20 +284,48 @@ export default function WeddingInvite() {
         </div>
       </section>
 
-      {/* 2) 메인 이미지 */}
+      {/* 2) 메인 이미지 – 커튼+블러업 */}
       <section className="max-w-md mx-auto px-5">
         <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white">
           <div className="relative w-full aspect-[3/4]">
+            {/* 스켈레톤 */}
             <div
-              className="absolute inset-0 animate-pulse"
+              className="absolute inset-0"
               style={{
                 background: "linear-gradient(90deg, #f5ece7 25%, #f0e6e0 37%, #f5ece7 63%)",
                 backgroundSize: "400% 100%",
+                animation: "shimmer 1.2s linear infinite",
                 opacity: mainLoaded ? 0 : 1,
-                transition: "opacity .35s ease",
+                transition: "opacity .3s ease",
               }}
             />
+
+            {/* 커튼(최소 550ms) */}
+            {curtainOn && (
+              <div
+                className="absolute inset-0 flex items-center justify-center"
+                style={{
+                  background: "linear-gradient(180deg, rgba(247,238,232,.95), rgba(247,238,232,0.35))",
+                  backdropFilter: "blur(1px)",
+                  opacity: 1,
+                  transition: "opacity .45s ease, transform .45s ease",
+                }}
+              >
+                <div
+                  className="rounded-full"
+                  style={{
+                    width: 44, height: 44, background: "#fff",
+                    boxShadow: "0 6px 20px rgba(0,0,0,.08)",
+                    transform: "scale(1)",
+                    animation: "pop 520ms cubic-bezier(.2,.8,.2,1) forwards",
+                  }}
+                />
+              </div>
+            )}
+
+            {/* 투명 오버레이(이미지 직접 상호작용 차단) */}
             <div className="absolute inset-0" data-photo onContextMenu={(e) => e.preventDefault()} />
+
             <img
               src={MAIN_IMG}
               alt="메인 웨딩 사진"
@@ -299,11 +334,12 @@ export default function WeddingInvite() {
               decoding="async"
               fetchPriority="high"
               sizes="(max-width: 480px) 100vw, 448px"
-              onLoad={() => setMainLoaded(true)}
+              onLoad={() => { setMainLoaded(true); endCurtainAfterMin(); }}
               style={{
                 opacity: mainLoaded ? 1 : 0,
-                transform: mainLoaded ? "translateY(0px)" : "translateY(8px)",
-                transition: "opacity .48s ease, transform .48s ease",
+                filter: mainLoaded ? "blur(0px)" : "blur(12px)",
+                transform: mainLoaded ? "scale(1) translateY(0px)" : "scale(1.02) translateY(4px)",
+                transition: "opacity .55s ease, filter .55s ease, transform .55s ease",
                 WebkitUserSelect: "none",
                 userSelect: "none",
                 WebkitTouchCallout: "none",
@@ -362,12 +398,12 @@ export default function WeddingInvite() {
         <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white">
           <div className="relative w-full aspect-[3/4]">
             <div
-              className="absolute inset-0 animate-pulse"
+              className="absolute inset-0"
               style={{
                 background: "linear-gradient(90deg, #f5ece7 25%, #f0e6e0 37%, #f5ece7 63%)",
                 backgroundSize: "400% 100%",
-                opacity: woodyLoaded ? 0 : 1,
-                transition: "opacity .35s ease",
+                animation: "shimmer 1.2s linear infinite",
+                opacity: 0,
               }}
             />
             <div className="absolute inset-0" data-photo onContextMenu={(e) => e.preventDefault()} />
@@ -379,15 +415,15 @@ export default function WeddingInvite() {
               decoding="async"
               fetchPriority="low"
               sizes="(max-width: 480px) 100vw, 448px"
-              onLoad={() => setWoodyLoaded(true)}
+              onLoad={() => {/* no-op */}}
               style={{
-                opacity: woodyLoaded ? 1 : 0,
-                transform: woodyLoaded ? "translateY(0px)" : "translateY(8px)",
-                transition: "opacity .48s ease, transform .48s ease",
+                opacity: 1,
+                transform: "translateY(0)",
                 WebkitUserSelect: "none",
                 userSelect: "none",
                 WebkitTouchCallout: "none",
                 pointerEvents: "none",
+                transition: "none",
               }}
               draggable={false}
               onContextMenu={(e) => e.preventDefault()}
@@ -408,7 +444,7 @@ export default function WeddingInvite() {
       {/* 5) 달력 + D-day */}
       <CalendarCard days={days} cells={dec2025Cells} highlight={THEME.hl} dDay={dDay} />
 
-      {/* 6) 오시는 길 + 구글 지도 (확대 가능) */}
+      {/* 6) 오시는 길 + 구글 지도 */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <Card className="text-center">
           <h2 className="font-semibold mb-1.5" style={{ color: THEME.hl, fontSize: "clamp(15px,4vw,17px)" }}>
@@ -444,12 +480,12 @@ export default function WeddingInvite() {
         </Card>
       </section>
 
-      {/* 7) 교통/주차/안내 */}
+      {/* 7) 교통/주차 */}
       <InfoSections highlight={THEME.hl} />
 
-      {/* 7.1) 추가 안내 – 분리 강조 */}
+      {/* 7.1) 추가 안내 – 분리 강조(점/볼드 없음) */}
       <ImportantNoticeCard />
-      
+
       {/* 8) 앨범 (3열) */}
       <section className="max-w-md mx-auto px-5 mt-6" onContextMenu={(e) => e.preventDefault()}>
         <Card>
@@ -506,12 +542,13 @@ export default function WeddingInvite() {
       {viewerOpen && images.length > 0 && (
         <div
           className="fixed inset-0 z-50 bg-black/90 text-white flex items-center justify-center"
-          onClick={closeViewer}
+          /* 클릭해도 종료되지 않도록 onClick 제거 */
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
           style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none", touchAction: "pan-y", overscrollBehavior: "contain" }}
           onContextMenu={(e) => e.preventDefault()}
         >
+          {/* 닫기 버튼만 종료 */}
           <button
             onClick={(e) => { e.stopPropagation(); closeViewer(); }}
             className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/15 backdrop-blur flex items-center justify-center"
@@ -519,6 +556,8 @@ export default function WeddingInvite() {
           >
             ×
           </button>
+
+          {/* 이전/다음 이동 (키보드 ←/→도 지원) */}
           <button
             onClick={(e) => { e.stopPropagation(); prev(); }}
             className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 backdrop-blur flex items-center justify-center"
@@ -534,8 +573,8 @@ export default function WeddingInvite() {
             ›
           </button>
 
+          {/* 이미지(클릭해도 종료 안 됨) */}
           <div className="absolute inset-0" data-photo onContextMenu={(e) => e.preventDefault()} />
-
           <img
             src={`/images/album/${images[viewerIdx]}`}
             alt={`album-view-${viewerIdx}`}
@@ -550,6 +589,12 @@ export default function WeddingInvite() {
           </div>
         </div>
       )}
+
+      {/* 키프레임 주입 */}
+      <style>{`
+        @keyframes shimmer { 0% { background-position-x: 0%; } 100% { background-position-x: 400%; } }
+        @keyframes pop { 0% { transform: scale(.85); opacity: 0; } 50% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+      `}</style>
     </main>
   );
 }
@@ -639,7 +684,7 @@ function CalendarCard({
   );
 }
 
-/** 안내 섹션 */
+/** 안내 섹션(추가 안내 제외) */
 function InfoSections({ highlight }: { highlight: string }) {
   return (
     <section className="max-w-md mx-auto px-5 mt-6">
@@ -664,7 +709,16 @@ function InfoSections({ highlight }: { highlight: string }) {
     </section>
   );
 }
+function InfoBlock({ title, highlight, children }: { title: string; highlight: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h4 className="font-semibold mb-1.5" style={{ color: highlight, fontSize: "clamp(15px,4vw,17px)" }}>{title}</h4>
+      <p className="text-gray-700" style={{ fontSize: "clamp(14px,3.6vw,15px)", lineHeight: 1.8 }}>{children}</p>
+    </div>
+  );
+}
 
+/** 추가 안내 – 별도 카드(점/볼드 없음) */
 function ImportantNoticeCard() {
   return (
     <section className="max-w-md mx-auto px-5 mt-4">
@@ -674,18 +728,8 @@ function ImportantNoticeCard() {
         aria-labelledby="important-notice-title"
       >
         <div className="flex items-center gap-2 mb-2">
-          {/* 강조 아이콘 */}
-          <span
-            className="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-sm"
-            style={{ background: "#D67878" }}
-          >
-            !
-          </span>
-          <h4
-            id="important-notice-title"
-            className="font-semibold"
-            style={{ color: "#D67878" }}
-          >
+          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-sm" style={{ background: "#D67878" }}>!</span>
+          <h4 id="important-notice-title" className="font-semibold" style={{ color: "#D67878" }}>
             추가 안내
           </h4>
         </div>
@@ -694,14 +738,6 @@ function ImportantNoticeCard() {
         </p>
       </div>
     </section>
-  );
-}
-function InfoBlock({ title, highlight, children }: { title: string; highlight: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <h4 className="font-semibold mb-1.5" style={{ color: highlight, fontSize: "clamp(15px,4vw,17px)" }}>{title}</h4>
-      <p className="text-gray-700" style={{ fontSize: "clamp(14px,3.6vw,15px)", lineHeight: 1.8 }}>{children}</p>
-    </div>
   );
 }
 
@@ -755,7 +791,6 @@ function SpeakerOn(props: React.SVGProps<SVGSVGElement>) { return (
     <path d="M18 7a6 6 0 0 1 0 10" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
   </svg>
 );}
-
 function SpeakerOff(props: React.SVGProps<SVGSVGElement>) { return (
   <svg viewBox="0 0 24 24" {...props}>
     <path fill="currentColor" d="M11 5.5c0-.6-.7-.9-1.1-.5L6.8 8H4.5A1.5 1.5 0 0 0 3 9.5v5A1.5 1.5 0 0 0 4.5 16H6.8l3.1 3c.4.4 1.1.1 1.1-.5V5.5z" />
@@ -763,14 +798,12 @@ function SpeakerOff(props: React.SVGProps<SVGSVGElement>) { return (
     <line x1="21" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
   </svg>
 );}
-
 function PhoneIcon(props: React.SVGProps<SVGSVGElement>) { return (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
     <path strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
           d="M22 16.5v3a2 2 0 0 1-2.2 2A19.5 19.5 0 0 1 2.5 4.2 2 2 0 0 1 4.5 2h3a2 2 0 0 1 2 1.7c.12.8.32 1.6.58 2.4a2 2 0 0 1-.44 2.1L9 10a16 16 0 0 0 5 5l.7-1.1a2 2 0 0 1 2.1-.45c.8.26 1.6.46 2.4.58A2 2 0 0 1 22 16.5z" />
   </svg>
 );}
-
 function SmsIcon(props: React.SVGProps<SVGSVGElement>) { return (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
     <rect x="3" y="4" width="18" height="14" rx="3" strokeWidth="1.8" />
@@ -778,20 +811,11 @@ function SmsIcon(props: React.SVGProps<SVGSVGElement>) { return (
   </svg>
 );}
 
-/** 네이버 아이콘 – 녹색 배경 + 정중앙 흰색 N */
+/** 네이버 아이콘 – 녹색 배경 중앙 흰색 N */
 function NaverOfficialIcon(props: React.HTMLAttributes<SVGSVGElement>) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      width={24}
-      height={24}
-      aria-label="네이버"
-      {...props}
-    >
-      {/* 배경 (녹색) */}
+    <svg viewBox="0 0 24 24" width={24} height={24} aria-label="네이버" {...props}>
       <rect width="24" height="24" rx="5" fill="#03C75A" />
-
-      {/* 흰색 N (정중앙 배치) */}
       <path
         d="M8 6h3.5l4.5 6.8V6h2v12h-3.5L10.5 11.2V18H8V6z"
         fill="#FFFFFF"
@@ -800,13 +824,13 @@ function NaverOfficialIcon(props: React.HTMLAttributes<SVGSVGElement>) {
   );
 }
 
-/** 카카오 지도 아이콘(동일) */
+/** 카카오 지도 아이콘 */
 function KakaoMapOfficialIcon(props: React.HTMLAttributes<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" aria-label="카카오 지도" {...props}>
-      <rect width="24" height="24" rx="5" fill="#FFE812" />
-      <path d="M12 4c-3.314 0-6 2.686-6 6 0 3.42 2.64 6.17 4.86 8.86.64.76 1.64.76 2.28 0C15.36 16.17 18 13.42 18 10c0-3.314-2.686-6-6-6z" fill="#1485EE"/>
-      <circle cx="12" cy="10" r="2.3" fill="#FFE812" />
-    </svg>
+    <rect width="24" height="24" rx="5" fill="#FFE812" />
+    <path d="M12 4c-3.314 0-6 2.686-6 6 0 3.42 2.64 6.17 4.86 8.86.64.76 1.64.76 2.28 0C15.36 16.17 18 13.42 18 10c0-3.314-2.686-6-6-6z" fill="#1485EE"/>
+    <circle cx="12" cy="10" r="2.3" fill="#FFE812" />
+  </svg>
   );
 }
