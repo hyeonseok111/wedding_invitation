@@ -744,34 +744,19 @@ function SmsIcon(props: React.SVGProps<SVGSVGElement>) { return (
   </svg>
 );}
 
-/** 네이버 지도 아이콘 – 첨부 이미지 스타일 */
+/** 네이버 아이콘 – 기본형 (흰색 N + 녹색 사각형 배경) */
 function NaverOfficialIcon(props: React.HTMLAttributes<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 1024 1024" width={24} height={24} aria-label="네이버 지도" {...props}>
-      <defs>
-        <linearGradient id="naverPin" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#19E56A" />
-          <stop offset="1" stopColor="#03C75A" />
-        </linearGradient>
-        <linearGradient id="naverShine" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#EEF3FF" stopOpacity="0.9" />
-          <stop offset="1" stopColor="#E6EEFF" stopOpacity="0.2" />
-        </linearGradient>
-      </defs>
-      {/* 흰색 라운드 사각형 배경 */}
-      <rect x="16" y="16" width="992" height="992" rx="220" fill="#FFFFFF" />
-      {/* 파란 띠(살짝 사다리꼴) */}
-      <path d="M200 704 L1024 704 L1024 864 L360 864 Z" fill="#3E5BFF" />
-      {/* 하단 유리광택 */}
-      <path d="M360 864 L1024 864 L1024 920 L448 920 Z" fill="url(#naverShine)" />
-      {/* 녹색 핀 */}
+    <svg
+      viewBox="0 0 24 24"
+      width={24}
+      height={24}
+      aria-label="네이버"
+      {...props}
+    >
+      <rect width="24" height="24" rx="5" fill="#03C75A" />
       <path
-        d="M512 128c-212 0-384 172-384 384 0 232 192 432 356 596a24 24 0 0 0 34 0c164-164 356-364 356-596 0-212-172-384-384-384z"
-        fill="url(#naverPin)"
-      />
-      {/* 흰색 N (벡터) */}
-      <path
-        d="M368 360h144l184 288V360h128v404H680L496 476v288H368z"
+        d="M7 6h4.2l5.8 9.1V6h3v12h-4.2L10 8.9V18H7V6z"
         fill="#FFFFFF"
       />
     </svg>
