@@ -17,8 +17,8 @@ const VENUE_ADDR = "서울 마포구 마포대로 92 효성해링턴스퀘어 B�
 const VENUE_TEL = "02-2197-0230";
 
 /** 카카오 퍼가기(스니펫) 값 */
-const KAKAO_SNIPPET_TIMESTAMP = "1755617224442";
-const KAKAO_SNIPPET_KEY = "7agv8awu965";
+const KAKAO_SNIPPET_TIMESTAMP = "1755617738032";
+const KAKAO_SNIPPET_KEY = "7nwxbp4qjrt";
 
 /** 외부 맵 단축 링크 */
 const NAVER_PLACE_SHORT = "https://naver.me/xmBt7BeP";
