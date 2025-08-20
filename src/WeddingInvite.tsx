@@ -586,24 +586,26 @@ function KakaoMapEmbed({
   function ensureLoader(): Promise<void> {
     const w = window as any;
     if (w.__roughmapReady) return w.__roughmapReady;
-    w.__roughmapReady = new Promise<void>((resolve) => {
-      const ready = () => (window as any).daum?.roughmap?.Lander && resolve();
-      if ((window as any).daum?.roughmap?.Lander) return resolve();
-
-      const existing = document.querySelector<HTMLScriptElement>("script.daum_roughmap_loader_script");
-      if (existing) {
-        const iv = setInterval(() => {
-          if ((window as any).daum?.roughmap?.Lander) { clearInterval(iv); resolve(); }
-        }, 50);
-        return;
-      }
+  
+    // lander.js를 직접 로드( document.write 회피 )
+    const LANDER_URL = "https://t1.daumcdn.net/kakaomapweb/roughmap/place/prod/20250630/roughmapLander.js";
+  
+    w.__roughmapReady = new Promise<void>((resolve, reject) => {
+      // 이미 로드됨?
+      if (w.daum?.roughmap?.Lander) return resolve();
+  
       const s = document.createElement("script");
-      s.src = "https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js";
+      s.src = LANDER_URL;
       s.charset = "UTF-8";
-      s.className = "daum_roughmap_loader_script";
-      s.onload = ready;
+      s.async = true;
+      s.onload = () => {
+        if (w.daum?.roughmap?.Lander) resolve();
+        else reject(new Error("roughmap Lander not available"));
+      };
+      s.onerror = () => reject(new Error("Failed to load roughmap Lander"));
       document.head.appendChild(s);
     });
+  
     return w.__roughmapReady;
   }
 
