@@ -724,6 +724,7 @@ function SpeakerOn(props: React.SVGProps<SVGSVGElement>) { return (
     <path d="M18 7a6 6 0 0 1 0 10" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
   </svg>
 );}
+
 function SpeakerOff(props: React.SVGProps<SVGSVGElement>) { return (
   <svg viewBox="0 0 24 24" {...props}>
     <path fill="currentColor" d="M11 5.5c0-.6-.7-.9-1.1-.5L6.8 8H4.5A1.5 1.5 0 0 0 3 9.5v5A1.5 1.5 0 0 0 4.5 16H6.8l3.1 3c.4.4 1.1.1 1.1-.5V5.5z" />
@@ -731,12 +732,14 @@ function SpeakerOff(props: React.SVGProps<SVGSVGElement>) { return (
     <line x1="21" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
   </svg>
 );}
+
 function PhoneIcon(props: React.SVGProps<SVGSVGElement>) { return (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
     <path strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
           d="M22 16.5v3a2 2 0 0 1-2.2 2A19.5 19.5 0 0 1 2.5 4.2 2 2 0 0 1 4.5 2h3a2 2 0 0 1 2 1.7c.12.8.32 1.6.58 2.4a2 2 0 0 1-.44 2.1L9 10a16 16 0 0 0 5 5l.7-1.1a2 2 0 0 1 2.1-.45c.8.26 1.6.46 2.4.58A2 2 0 0 1 22 16.5z" />
   </svg>
 );}
+
 function SmsIcon(props: React.SVGProps<SVGSVGElement>) { return (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
     <rect x="3" y="4" width="18" height="14" rx="3" strokeWidth="1.8" />
@@ -744,7 +747,7 @@ function SmsIcon(props: React.SVGProps<SVGSVGElement>) { return (
   </svg>
 );}
 
-/** 네이버 아이콘 – 기본형 (흰색 N + 녹색 사각형 배경) */
+/** 네이버 아이콘 – 녹색 배경 + 정중앙 흰색 N */
 function NaverOfficialIcon(props: React.HTMLAttributes<SVGSVGElement>) {
   return (
     <svg
@@ -754,9 +757,12 @@ function NaverOfficialIcon(props: React.HTMLAttributes<SVGSVGElement>) {
       aria-label="네이버"
       {...props}
     >
+      {/* 배경 (녹색) */}
       <rect width="24" height="24" rx="5" fill="#03C75A" />
+
+      {/* 흰색 N (정중앙 배치) */}
       <path
-        d="M7 6h4.2l5.8 9.1V6h3v12h-4.2L10 8.9V18H7V6z"
+        d="M8 6h3.5l4.5 6.8V6h2v12h-3.5L10.5 11.2V18H8V6z"
         fill="#FFFFFF"
       />
     </svg>
