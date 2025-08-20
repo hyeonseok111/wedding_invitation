@@ -447,6 +447,9 @@ export default function WeddingInvite() {
       {/* 7) 교통/주차/안내 */}
       <InfoSections highlight={THEME.hl} />
 
+      {/* 7.1) 추가 안내 – 분리 강조 */}
+      <ImportantNoticeCard />
+      
       {/* 8) 앨범 (3열) */}
       <section className="max-w-md mx-auto px-5 mt-6" onContextMenu={(e) => e.preventDefault()}>
         <Card>
@@ -657,14 +660,36 @@ function InfoSections({ highlight }: { highlight: string }) {
           효성해링턴스퀘어 본 건물 주차 (2시간 무료) <br />
           [외부 주차장 : SUN 장학빌딩, 하이파킹 공덕역점, 경보 주차장]
         </InfoBlock>
-        <Divider />
-        <InfoBlock title="추가 안내" highlight={highlight}>
-          예식장 내 화환 반입이 불가하여 마음만 감사히 받겠습니다.
-        </InfoBlock>
       </Card>
     </section>
   );
 }
+
+function ImportantNoticeCard() {
+  return (
+    <section className="max-w-md mx-auto px-5 mt-4">
+      <div
+        className="rounded-[20px] p-5 border shadow-sm"
+        style={{ background: "#FFFDF8", borderColor: "#F4D7D7" }}
+        aria-labelledby="important-notice-title"
+      >
+        <div className="flex items-center gap-2 mb-2">
+          {/* 강조 아이콘 */}
+          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-white"
+                style={{ background: "#D67878" }}>!</span>
+          <h4 id="important-notice-title" className="font-semibold" style={{ color: "#D67878" }}>
+            추가 안내
+          </h4>
+        </div>
+        <ul className="list-disc pl-5 text-[14.5px] leading-7 text-gray-800">
+          <li>예식장 내 <b>화환 반입이 불가</b>합니다. 마음만 감사히 받겠습니다.</li>
+          {/* 필요 시 항목을 더 추가해도 됩니다 */}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 function InfoBlock({ title, highlight, children }: { title: string; highlight: string; children: React.ReactNode }) {
   return (
     <div>
