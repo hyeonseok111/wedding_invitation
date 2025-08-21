@@ -714,13 +714,39 @@ function AppLink({ label, href, children }: { label: string; href: string; child
 }
 
 /** 아이콘들 */
-function SpeakerOn(props: React.SVGProps<SVGSVGElement>) { return (
-  <svg viewBox="0 0 24 24" {...props}>
-    <path fill="currentColor" d="M11 5.5c0-.6-.7-.9-1.1-.5L6.8 8H4.5A1.5 1.5 0 0 0 3 9.5v5A1.5 1.5 0 0 0 4.5 16H6.8l3.1 3c.4.4 1.1.1 1.1-.5V5.5z" />
-    <path d="M16 9a3 3 0 0 1 0 6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
-    <path d="M18 7a6 6 0 0 1 0 10" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
-  </svg>
-);}
+function SpeakerOn(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" {...props}>
+      {/* 스피커 본체 */}
+      <path
+        fill="currentColor"
+        d="M11 5.5c0-.6-.7-.9-1.1-.5L6.8 8H4.5A1.5 1.5 0 0 0 3 9.5v5A1.5 1.5 0 0 0 4.5 16H6.8l3.1 3c.4.4 1.1.1 1.1-.5V5.5z"
+      />
+      {/* 부드러운 곡선의 사운드 웨이브 */}
+      <path
+        d="M15 9.5c1 .8 1 4.2 0 5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        fill="none"
+        strokeLinecap="round"
+      />
+      <path
+        d="M17.5 7.5c2 1.6 2 7.4 0 9"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        fill="none"
+        strokeLinecap="round"
+      />
+      <path
+        d="M20 5.5c3 2.4 3 10.6 0 13"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        fill="none"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 function SpeakerOff(props: React.SVGProps<SVGSVGElement>) { return (
   <svg viewBox="0 0 24 24" {...props}>
     <path fill="currentColor" d="M11 5.5c0-.6-.7-.9-1.1-.5L6.8 8H4.5A1.5 1.5 0 0 0 3 9.5v5A1.5 1.5 0 0 0 4.5 16H6.8l3.1 3c.4.4 1.1.1 1.1-.5V5.5z" />
