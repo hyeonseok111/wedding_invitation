@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 /** ───────── 테마/상수 ───────── */
-const BGM_SRC = "/bgm/Forever Yours - Wayne Jones.mp3";
+const BGM_SRC = "/bgm/ForeverYours.mp3";
 const THEME = {
   bg: "#FFF7F1",
   card: "#FFFFFF",
