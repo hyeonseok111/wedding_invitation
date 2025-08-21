@@ -2,12 +2,22 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <meta name="theme-color" content="#D67878" />
     <meta name="color-scheme" content="light only" />
 
     <title>이현석 · 유지현 모바일 청첩장</title>
-    <meta name="description" content="2025년 12월 7일(일) 오후 3시 30분 · 아펠가모 공덕 라로브홀" />
+    <meta
+      name="description"
+      content="2025년 12월 7일(일) 오후 3시 30분 · 아펠가모 공덕 라로브홀"
+    />
+    <link
+      rel="canonical"
+      href="https://hyeonseok111-wedding.netlify.app/"
+    />
 
     <!-- Favicon -->
     <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -26,7 +36,7 @@
       href="https://cdn.jsdelivr.net/npm/pretendard/dist/web/static/pretendard.css"
     />
 
-    <!-- Open Graph (SNS 공유 시) -->
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="ko_KR" />
     <meta property="og:title" content="이현석 ❤ 유지현 결혼식 초대합니다" />
@@ -34,21 +44,33 @@
       property="og:description"
       content="2025년 12월 7일(일) 오후 3시 30분 · 아펠가모 공덕 라로브홀"
     />
-    <meta property="og:url" content="https://hyeonseok111-wedding.netlify.app/" />
+    <meta
+      property="og:url"
+      content="https://hyeonseok111-wedding.netlify.app/"
+    />
 
-    <!-- Twitter Card -->
+    <!-- Twitter Card (이미지 제외) -->
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="이현석 ❤ 유지현 결혼식 초대합니다" />
+    <meta
+      name="twitter:title"
+      content="이현석 ❤ 유지현 결혼식 초대합니다"
+    />
     <meta
       name="twitter:description"
       content="2025년 12월 7일(일) 오후 3시 30분 · 아펠가모 공덕 라로브홀"
     />
 
-    <!-- ✅ 메인 웨딩 사진 프리로드 -->
-    <link rel="preload" as="image" href="/images/album/Bloom_25_06_13_073904.JPG" />
+    <!-- 메인 웨딩 사진 프리로드 (선택 사항) -->
+    <link
+      rel="preload"
+      as="image"
+      href="/images/album/Bloom_25_06_13_073904.JPG"
+    />
   </head>
   <body class="bg-[#FFF7F1] text-gray-900">
     <div id="root">로딩중…</div>
+    <!-- 개발용: vite 실행 시 -->
     <script type="module" src="src/main.tsx"></script>
+    <!-- 배포 시: vite build 결과물이 자동으로 대체됨 -->
   </body>
 </html>
