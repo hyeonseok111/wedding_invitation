@@ -317,30 +317,52 @@ export default function WeddingInvite() {
       {/* 3) 시 + 초대문 */}
       <section className="max-w-md mx-auto px-5 mt-8">
         <Card className="text-center p-7">
+          {/* 아이콘 (사계절을 상징하는 리프/플라워 아이콘) */}
           <div className="flex justify-center">
-            <div className="w-8 h-8 rounded-full bg-[#F6E8E8]/60 flex items-center justify-center">
-              <span aria-hidden className="text-[10px] text-[#8a6a6a]">✿</span>
+            <div className="w-9 h-9 rounded-full bg-[#F3EFEA]/70 flex items-center justify-center shadow-sm">
+              <span aria-hidden className="text-[13px] text-[#7d6b5c]">❀</span>
             </div>
           </div>
-
+      
+          {/* 시문 */}
           <div
             className="mt-4 text-gray-800"
-            style={{ fontFamily: "'Noto Serif KR', ui-serif, serif", fontSize: "clamp(16px, 3.7vw, 20px)", lineHeight: 1.85 }}
+            style={{
+              fontFamily: "'Noto Serif KR', ui-serif, serif",
+              fontSize: "clamp(16px, 3.7vw, 20px)",
+              lineHeight: 1.9,
+            }}
           >
-            <p>장담하건대, 세상이 다 겨울이어도</p>
-            <p className="mt-1.5">우리 사랑은 늘봄처럼 따뜻하고</p>
-            <p className="mt-1.5">간혹, 여름처럼 뜨거울 겁니다</p>
-            <p className="mt-2 text-gray-500" style={{ fontSize: "0.95em" }}>– 이수동, &lt;사랑가&gt; –</p>
+            <p>봄의 그대는 벚꽃이었고</p>
+            <p className="mt-1.5">여름의 그대는 바람이었으며</p>
+            <p className="mt-1.5">가을의 그대는 하늘이었고</p>
+            <p className="mt-1.5">겨울의 그대는 하얀 눈이었다.</p>
+            <p className="mt-1.5">그대는 언제나</p>
+            <p className="mt-1.5">행복 그 자체였다</p>
+            <p className="mt-2 text-gray-500" style={{ fontSize: "0.95em" }}>– 강현욱, &lt;사계&gt; –</p>
           </div>
-
+      
+          {/* 구분선 */}
           <div className="my-6 h-px" style={{ background: "#eee" }} />
-
-          <h3 className="tracking-[0.35em] text-gray-500" style={{ fontSize: "clamp(11px, 2.6vw, 13px)" }}>INVITATION</h3>
-          <div className="mt-4 text-gray-900" style={{ fontSize: "clamp(16px, 3.6vw, 20px)", lineHeight: 1.85 }}>
-            <p>사랑이 봄처럼 시작되어</p>
-            <p className="mt-1.5">겨울의 약속으로 이어집니다.</p>
-            <p className="mt-1.5">하루하루의 마음이 저희의 계절을 만들었으니</p>
-            <p className="mt-1.5">함께 오셔서 따뜻히 축복해 주시면 감사하겠습니다.</p>
+      
+          {/* 초대문 */}
+          <h3
+            className="tracking-[0.35em] text-gray-500"
+            style={{ fontSize: "clamp(11px, 2.6vw, 13px)" }}
+          >
+            INVITATION
+          </h3>
+          <div
+            className="mt-4 text-gray-900"
+            style={{
+              fontSize: "clamp(16px, 3.6vw, 20px)",
+              lineHeight: 1.9,
+            }}
+          >
+            <p>네 번의 사계를 걸어온 두 사람이</p>
+            <p className="mt-1.5">평생의 계절을 함께 할 것을 약속하려 합니다.</p>
+            <p className="mt-1.5">따뜻한 마음으로 그 첫걸음을</p>
+            <p className="mt-1.5">축복해 주시면 감사하겠습니다.</p>
           </div>
         </Card>
       </section>
@@ -633,7 +655,7 @@ function InfoSections({ highlight }: { highlight: string }) {
         <Divider />
         <InfoBlock title="주차" highlight={highlight}>
           효성해링턴스퀘어 본 건물 주차 (2시간 무료) <br />
-          [외부 주차장 : SUN 장학빌딩, 하이파킹 공덕역점, 경보 주차장]
+          [외부 주차장 : SNU 장학빌딩, 하이파킹 공덕역점, 경보 주차장]
         </InfoBlock>
       </Card>
     </section>
