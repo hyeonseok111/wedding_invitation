@@ -42,7 +42,11 @@ const BRIDE_ACCOUNTS = [
 ];
 
 /** 앨범 index.json 타입 */
-type AlbumIndex = { main: string; album: string[] };
+type AlbumIndex = {
+  main: string;
+  end?: string;
+  album: string[];
+};
 
 /** 유틸 */
 const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
@@ -170,7 +174,10 @@ export default function WeddingInvite() {
         const clean = (data.album || [])
           .filter((f) => typeof f === "string" && f.trim())
           .map((f) => f.trim());
-        if (!canceled) { setAlbumIndex({ main: data.main, album: clean }); setAlbumError(null); }
+        const end = typeof (data as any).end === "string" && (data as any).end.trim()
+          ? (data as any).end.trim()
+          : undefined;
+        if (!canceled) { setAlbumIndex({ main: data.main, end, album: clean }); setAlbumError(null); }
       } catch {
         if (!canceled) { setAlbumIndex(null); setAlbumError("앨범 목록(index.json)을 불러오지 못했습니다."); }
       }
@@ -180,7 +187,9 @@ export default function WeddingInvite() {
 
   const MAIN_IMG = albumIndex
     ? `/images/album/${albumIndex.main}`
-    : "/images/album/Bloom_25_06_13_073904.JPG";
+    : null;
+
+  const END_IMG = albumIndex?.end ? `/images/album/${albumIndex.end}` : null;
 
   /** 복사 */
   const copy = async (txt: string) => {
@@ -497,6 +506,32 @@ export default function WeddingInvite() {
           <p className="mt-1 text-[11px] text-gray-500">예식장 내 화환 반입이 불가합니다. 마음만 감사히 받겠습니다.</p>
         </Card>
       </section>
+
+      {/* 9.9) 엔딩 이미지 (확대/저장 불가) */}
+      {END_IMG && (
+        <section className="max-w-md mx-auto px-5 mt-6 pb-24">
+          <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white">
+            <div className="relative w-full aspect-[3/4]">
+              <img
+                src={END_IMG}
+                alt="엔딩 이미지"
+                className="absolute inset-0 w-full h-full object-contain select-none"
+                loading="lazy"
+                decoding="async"
+                fetchPriority="low"
+                draggable={false}
+                onContextMenu={(e) => e.preventDefault()}
+                style={{
+                  WebkitUserSelect: "none",
+                  userSelect: "none",
+                  WebkitTouchCallout: "none",
+                  pointerEvents: "none", // ✨ 클릭·롱프레스·핀치 제스처 차단
+                }}
+              />
+            </div>
+          </figure>
+        </section>
+      )}
 
       {/* ── 풀스크린 앨범 뷰어 ── */}
       {viewerOpen && images.length > 0 && (
