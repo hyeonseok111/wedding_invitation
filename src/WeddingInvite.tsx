@@ -31,20 +31,20 @@ const GROOM_TEL = "010-4100-5960";
 const BRIDE_TEL = "010-3350-7890";
 
 const GROOM_ACCOUNTS = [
-  { bank: "우리은행", number: "1002-743-669917", holder: "이현석" },
-  { bank: "국민", number: "000-000-000000", holder: "이영철" },
-  { bank: "국민", number: "000-000-000000", holder: "이경희" },
+  { bank: "신한은행", number: "110-300-437820", holder: "이현석" },
+  { bank: "농협은행", number: "000-000-000000", holder: "이영철" },
+  { bank: "농협은행", number: "000-000-000000", holder: "이경희" },
 ];
 const BRIDE_ACCOUNTS = [
-  { bank: "국민", number: "000-000-000000", holder: "유지현" },
-  { bank: "국민", number: "000-000-000000", holder: "유기만" },
-  { bank: "국민", number: "000-000-000000", holder: "정원경" },
+  { bank: "신한은행", number: "110-490-208791", holder: "유지현" },
+  { bank: "국민은행", number: "000-000-000000", holder: "유기만" },
+  { bank: "국민은행", number: "000-000-000000", holder: "정원경" },
 ];
 
 /** 앨범 index.json 타입 */
 type AlbumIndex = {
-  main: string;
-  end?: string;
+  main: string;       // main은 지정이 없으면 안내문구 출력용
+  end?: string;       // end는 없어도 됨(섹션 미표시)
   album: string[];
 };
 
@@ -111,13 +111,18 @@ export default function WeddingInvite() {
     return cells;
   }, []);
 
-  /** 전역: 사진 확대/저장 방지 (지도 제외) */
+  /** 전역 확대/저장 방지 (지도만 예외적으로 확대 허용) */
   useEffect(() => {
     const isImageContext = (el: EventTarget | null) => {
       const node = el as HTMLElement | null;
       return !!node && (node.tagName === "IMG" || !!node.closest("img,[data-photo]"));
     };
+    const isZoomAllowedZone = (el: EventTarget | null) => {
+      const node = el as HTMLElement | null;
+      return !!node && !!node.closest('[data-allow-zoom="true"]');
+    };
 
+    // 1) 이미지 저장/선택/더블탭/핀치 방지
     const preventMultiTouchOnImg = (e: TouchEvent) => {
       if (e.touches.length > 1 && isImageContext(e.target)) e.preventDefault();
     };
@@ -142,11 +147,23 @@ export default function WeddingInvite() {
     document.addEventListener("touchend", preventDoubleTapOnImg, { passive: false });
     document.addEventListener("contextmenu", preventContextOnImg);
 
-    // IMG 공통 저장/선택 방지 스타일
+    // 2) 페이지 전체 확대 차단 (Safari: gesture*, Desktop/Android: Ctrl+Wheel)
+    const blockPageZoomGesture = (e: Event) => {
+      if (!isZoomAllowedZone((e as any).target)) e.preventDefault();
+    };
+    const blockCtrlWheel = (e: WheelEvent) => {
+      if (e.ctrlKey && !isZoomAllowedZone(e.target)) e.preventDefault();
+    };
+    document.addEventListener("gesturestart", blockPageZoomGesture as any, { passive: false } as any);
+    document.addEventListener("gesturechange", blockPageZoomGesture as any, { passive: false } as any);
+    document.addEventListener("gestureend", blockPageZoomGesture as any, { passive: false } as any);
+    document.addEventListener("wheel", blockCtrlWheel, { passive: false });
+
+    // 공통 스타일
     const style = document.createElement("style");
     style.textContent = `
       img { -webkit-touch-callout: none !important; user-select: none !important; }
-      body { touch-action: manipulation; }
+      body { touch-action: manipulation; } /* 탭/클릭은 허용, 제스처 확대는 상단에서 차단 */
     `;
     document.head.appendChild(style);
 
@@ -157,6 +174,12 @@ export default function WeddingInvite() {
       document.removeEventListener("gestureend", preventGestureOnImg as any);
       document.removeEventListener("touchend", preventDoubleTapOnImg as any);
       document.removeEventListener("contextmenu", preventContextOnImg as any);
+
+      document.removeEventListener("gesturestart", blockPageZoomGesture as any);
+      document.removeEventListener("gesturechange", blockPageZoomGesture as any);
+      document.removeEventListener("gestureend", blockPageZoomGesture as any);
+      document.removeEventListener("wheel", blockCtrlWheel as any);
+
       document.head.removeChild(style);
     };
   }, []);
@@ -177,7 +200,7 @@ export default function WeddingInvite() {
         const end = typeof (data as any).end === "string" && (data as any).end.trim()
           ? (data as any).end.trim()
           : undefined;
-        if (!canceled) { setAlbumIndex({ main: data.main, end, album: clean }); setAlbumError(null); }
+        if (!canceled) { setAlbumIndex({ main: (data.main || "").trim(), end, album: clean }); setAlbumError(null); }
       } catch {
         if (!canceled) { setAlbumIndex(null); setAlbumError("앨범 목록(index.json)을 불러오지 못했습니다."); }
       }
@@ -185,11 +208,8 @@ export default function WeddingInvite() {
     return () => { canceled = true; };
   }, []);
 
-  const MAIN_IMG = albumIndex
-    ? `/images/album/${albumIndex.main}`
-    : null;
-
-  const END_IMG = albumIndex?.end ? `/images/album/${albumIndex.end}` : null;
+  const MAIN_IMG = albumIndex?.main ? `/images/album/${albumIndex.main}` : null;
+  const END_IMG  = albumIndex?.end  ? `/images/album/${albumIndex.end}`   : null;
 
   /** 복사 */
   const copy = async (txt: string) => {
@@ -287,11 +307,10 @@ export default function WeddingInvite() {
         </div>
       </section>
 
-      {/* 2) 메인 이미지 (애니메이션 없음) */}
+      {/* 2) 메인 이미지 (index.json 누락 시 안내) */}
       <section className="max-w-md mx-auto px-5">
-        <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white">
+        {MAIN_IMG ? (
           <div className="relative w-full aspect-[3/4]">
-            {/* 저장/롱프레스 억제용 투명 레이어는 삭제(버튼 방해 방지) */}
             <img
               src={MAIN_IMG}
               alt="메인 웨딩 사진"
@@ -310,7 +329,11 @@ export default function WeddingInvite() {
               onContextMenu={(e) => e.preventDefault()}
             />
           </div>
-        </figure>
+        ) : (
+          <div className="rounded-[20px] p-5 text-center text-gray-500 bg-white shadow-sm">
+            메인 이미지 <b>지정 안되어 있음</b>
+          </div>
+        )}
       </section>
 
       {/* 2.1) 날짜/장소 */}
@@ -326,13 +349,13 @@ export default function WeddingInvite() {
       {/* 3) 시 + 초대문 */}
       <section className="max-w-md mx-auto px-5 mt-8">
         <Card className="text-center p-7">
-          {/* 아이콘 (사계절을 상징하는 리프/플라워 아이콘) */}
+          {/* 아이콘 (사계절 심볼) */}
           <div className="flex justify-center">
             <div className="w-9 h-9 rounded-full bg-[#F3EFEA]/70 flex items-center justify-center shadow-sm">
               <span aria-hidden className="text-[13px] text-[#7d6b5c]">❀</span>
             </div>
           </div>
-      
+
           {/* 시문 */}
           <div
             className="mt-4 text-gray-800"
@@ -350,10 +373,10 @@ export default function WeddingInvite() {
             <p className="mt-1.5">행복 그 자체였다</p>
             <p className="mt-2 text-gray-500" style={{ fontSize: "0.95em" }}>– 강현욱, &lt;사계&gt; –</p>
           </div>
-      
+
           {/* 구분선 */}
           <div className="my-6 h-px" style={{ background: "#eee" }} />
-      
+
           {/* 초대문 */}
           <h3
             className="tracking-[0.35em] text-gray-500"
@@ -376,29 +399,27 @@ export default function WeddingInvite() {
         </Card>
       </section>
 
-      {/* 3.5) 우디 사진 (애니메이션 없음) */}
+      {/* 3.5) 우디 사진 */}
       <section className="max-w-md mx-auto px-5 mt-6">
-        <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white">
-          <div className="relative w-full aspect-[3/4]">
-            <img
-              src="/images/album/woody_25_06_13_069994.JPG"
-              alt="우디 사진"
-              className="absolute inset-0 w-full h-full object-contain"
-              loading="lazy"
-              decoding="async"
-              fetchPriority="low"
-              sizes="(max-width: 480px) 100vw, 448px"
-              style={{
-                WebkitUserSelect: "none",
-                userSelect: "none",
-                WebkitTouchCallout: "none",
-                pointerEvents: "none",
-              }}
-              draggable={false}
-              onContextMenu={(e) => e.preventDefault()}
-            />
-          </div>
-        </figure>
+        <div className="relative w-full aspect-[3/4]">
+          <img
+            src="/images/album/woody_25_06_13_069994.JPG"
+            alt="우디 사진"
+            className="absolute inset-0 w-full h-full object-contain"
+            loading="lazy"
+            decoding="async"
+            fetchPriority="low"
+            sizes="(max-width: 480px) 100vw, 448px"
+            style={{
+              WebkitUserSelect: "none",
+              userSelect: "none",
+              WebkitTouchCallout: "none",
+              pointerEvents: "none",
+            }}
+            draggable={false}
+            onContextMenu={(e) => e.preventDefault()}
+          />
+        </div>
       </section>
 
       {/* 4) 연락 라인 */}
@@ -413,7 +434,7 @@ export default function WeddingInvite() {
       {/* 5) 달력 + D-day */}
       <CalendarCard days={days} cells={dec2025Cells} highlight={THEME.hl} dDay={dDay} />
 
-      {/* 6) 오시는 길 + 구글 지도 */}
+      {/* 6) 오시는 길 + 구글 지도 (지도 영역만 확대 허용) */}
       <section className="max-w-md mx-auto px-5 mt-6">
         <Card className="text-center">
           <h2 className="font-semibold mb-1.5" style={{ color: THEME.hl, fontSize: "clamp(15px,4vw,17px)" }}>
@@ -434,7 +455,8 @@ export default function WeddingInvite() {
             </a>
           </div>
 
-          <div className="mt-5 rounded-2xl overflow-hidden shadow-sm border" style={{ borderColor: THEME.line }}>
+          {/* 확대 허용 존 */}
+          <div className="mt-5 rounded-2xl overflow-hidden shadow-sm border" style={{ borderColor: THEME.line }} data-allow-zoom="true">
             <GoogleMapEmbed src={GOOGLE_MAP_EMBED_SRC} height={380} />
           </div>
 
@@ -452,7 +474,7 @@ export default function WeddingInvite() {
       {/* 7) 교통/주차 */}
       <InfoSections highlight={THEME.hl} />
 
-      {/* 7.1) 추가 안내 – 분리 카드(점/볼드 없음) */}
+      {/* 7.1) 추가 안내 */}
       <ImportantNoticeCard />
 
       {/* 8) 앨범 (3열) */}
@@ -492,7 +514,7 @@ export default function WeddingInvite() {
       </section>
 
       {/* 9) 마음 전하는 곳 */}
-      <section className="max-w-md mx-auto px-5 mt-6 pb-20">
+      <section className="max-w-md mx-auto px-5 mt-6">
         <Card>
           <h2 className="text-center font-semibold mb-3" style={{ color: THEME.hl, fontSize: "clamp(15px,4vw,17px)" }}>
             마음을 전하는 곳
@@ -507,29 +529,28 @@ export default function WeddingInvite() {
         </Card>
       </section>
 
-      {/* 9.9) 엔딩 이미지 (확대/저장 불가) */}
+      {/* 9.9) 엔딩 이미지 (틀 제거, 이미지 자체만) */}
       {END_IMG && (
         <section className="max-w-md mx-auto px-5 mt-6 pb-24">
-          <figure className="rounded-[20px] overflow-hidden shadow-sm bg-white">
-            <div className="relative w-full aspect-[3/4]">
-              <img
-                src={END_IMG}
-                alt="엔딩 이미지"
-                className="absolute inset-0 w-full h-full object-contain select-none"
-                loading="lazy"
-                decoding="async"
-                fetchPriority="low"
-                draggable={false}
-                onContextMenu={(e) => e.preventDefault()}
-                style={{
-                  WebkitUserSelect: "none",
-                  userSelect: "none",
-                  WebkitTouchCallout: "none",
-                  pointerEvents: "none", // ✨ 클릭·롱프레스·핀치 제스처 차단
-                }}
-              />
-            </div>
-          </figure>
+          <div className="relative w-full">
+            {/* 가로/세로 어떤 이미지든 자연스러운 비율로 꽉 차지 않도록 contain */}
+            <img
+              src={END_IMG}
+              alt="엔딩 이미지"
+              className="w-full h-auto block object-contain"
+              loading="lazy"
+              decoding="async"
+              fetchPriority="low"
+              draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
+              style={{
+                WebkitUserSelect: "none",
+                userSelect: "none",
+                WebkitTouchCallout: "none",
+                pointerEvents: "none", // 클릭/롱프레스/핀치 차단
+              }}
+            />
+          </div>
         </section>
       )}
 
@@ -567,7 +588,7 @@ export default function WeddingInvite() {
             ›
           </button>
 
-          {/* 이미지: 포인터 이벤트 비활성화(버튼과 제스처 방해 금지) */}
+          {/* 이미지: 포인터 이벤트 비활성화(버튼/제스처 방해 금지) */}
           <img
             src={`/images/album/${images[viewerIdx]}`}
             alt={`album-view-${viewerIdx}`}
@@ -689,7 +710,7 @@ function InfoSections({ highlight }: { highlight: string }) {
         </InfoBlock>
         <Divider />
         <InfoBlock title="주차" highlight={highlight}>
-          효성해링턴스퀘어 본 건물 주차 (2시간 무료) <br />
+          효성해링턴스퀘어 B동 주차 (2시간 무료) <br />
           [외부 주차장 : SNU 장학빌딩, 하이파킹 공덕역점, 경보 주차장]
         </InfoBlock>
       </Card>
@@ -705,7 +726,7 @@ function InfoBlock({ title, highlight, children }: { title: string; highlight: s
   );
 }
 
-/** 추가 안내 – 별도 카드(점/볼드 없음) */
+/** 추가 안내 */
 function ImportantNoticeCard() {
   return (
     <section className="max-w-md mx-auto px-5 mt-4">
@@ -774,33 +795,13 @@ function AppLink({ label, href, children }: { label: string; href: string; child
 function SpeakerOn(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" {...props}>
-      {/* 스피커 본체 */}
       <path
         fill="currentColor"
         d="M11 5.5c0-.6-.7-.9-1.1-.5L6.8 8H4.5A1.5 1.5 0 0 0 3 9.5v5A1.5 1.5 0 0 0 4.5 16H6.8l3.1 3c.4.4 1.1.1 1.1-.5V5.5z"
       />
-      {/* 부드러운 곡선의 사운드 웨이브 */}
-      <path
-        d="M15 9.5c1 .8 1 4.2 0 5"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        fill="none"
-        strokeLinecap="round"
-      />
-      <path
-        d="M17.5 7.5c2 1.6 2 7.4 0 9"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        fill="none"
-        strokeLinecap="round"
-      />
-      <path
-        d="M20 5.5c3 2.4 3 10.6 0 13"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        fill="none"
-        strokeLinecap="round"
-      />
+      <path d="M15 9.5c1 .8 1 4.2 0 5" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+      <path d="M17.5 7.5c2 1.6 2 7.4 0 9" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+      <path d="M20 5.5c3 2.4 3 10.6 0 13" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" />
     </svg>
   );
 }
@@ -829,10 +830,7 @@ function NaverOfficialIcon(props: React.HTMLAttributes<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" width={24} height={24} aria-label="네이버" {...props}>
       <rect width="24" height="24" rx="5" fill="#03C75A" />
-      <path
-        d="M8 6h3.5l4.5 6.8V6h2v12h-3.5L10.5 11.2V18H8V6z"
-        fill="#FFFFFF"
-      />
+      <path d="M8 6h3.5l4.5 6.8V6h2v12h-3.5L10.5 11.2V18H8V6z" fill="#FFFFFF" />
     </svg>
   );
 }
