@@ -113,73 +113,81 @@ export default function WeddingInvite() {
 
   /** 전역 확대/저장 방지 (지도만 예외적으로 확대 허용) */
   useEffect(() => {
-    const isImageContext = (el: EventTarget | null) => {
-      const node = el as HTMLElement | null;
-      return !!node && (node.tagName === "IMG" || !!node.closest("img,[data-photo]"));
-    };
     const isZoomAllowedZone = (el: EventTarget | null) => {
       const node = el as HTMLElement | null;
       return !!node && !!node.closest('[data-allow-zoom="true"]');
     };
-
-    // 1) 이미지 저장/선택/더블탭/핀치 방지
-    const preventMultiTouchOnImg = (e: TouchEvent) => {
-      if (e.touches.length > 1 && isImageContext(e.target)) e.preventDefault();
+  
+    // 1) 핀치(두 손가락) 줌 차단 (지도 영역만 예외)
+    const onTouchStartBlockPinch = (e: TouchEvent) => {
+      if (e.touches.length > 1 && !isZoomAllowedZone(e.target)) {
+        e.preventDefault();
+      }
     };
-    const preventGestureOnImg = (e: Event) => {
-      if (isImageContext(e.target)) e.preventDefault();
-    };
-    let lastTap = 0;
-    const preventDoubleTapOnImg = (e: TouchEvent) => {
-      if (!isImageContext(e.target)) return;
-      const now = Date.now();
-      if (now - lastTap < 350) e.preventDefault();
-      lastTap = now;
-    };
-    const preventContextOnImg = (e: Event) => {
-      if (isImageContext(e.target)) e.preventDefault();
-    };
-
-    document.addEventListener("touchstart", preventMultiTouchOnImg, { passive: false });
-    document.addEventListener("gesturestart", preventGestureOnImg as any, { passive: false } as any);
-    document.addEventListener("gesturechange", preventGestureOnImg as any, { passive: false } as any);
-    document.addEventListener("gestureend", preventGestureOnImg as any, { passive: false } as any);
-    document.addEventListener("touchend", preventDoubleTapOnImg, { passive: false });
-    document.addEventListener("contextmenu", preventContextOnImg);
-
-    // 2) 페이지 전체 확대 차단 (Safari: gesture*, Desktop/Android: Ctrl+Wheel)
-    const blockPageZoomGesture = (e: Event) => {
+    const onGestureAny = (e: Event) => {
       if (!isZoomAllowedZone((e as any).target)) e.preventDefault();
     };
-    const blockCtrlWheel = (e: WheelEvent) => {
+  
+    // 2) 더블탭/더블클릭 스마트줌 차단 (지도 영역만 예외)
+    let lastTap = 0;
+    let lastX = 0, lastY = 0;
+    const onTouchEndBlockDoubleTap = (e: TouchEvent) => {
+      const now = Date.now();
+      const x = e.changedTouches[0].clientX;
+      const y = e.changedTouches[0].clientY;
+      const isDouble = now - lastTap < 350 && Math.hypot(x - lastX, y - lastY) < 30;
+      lastTap = now; lastX = x; lastY = y;
+  
+      if (isDouble && !isZoomAllowedZone(e.target)) {
+        e.preventDefault();
+      }
+    };
+    const onDblClick = (e: MouseEvent) => {
+      if (!isZoomAllowedZone(e.target)) e.preventDefault();
+    };
+  
+    // 3) Ctrl+Wheel 확대(데스크톱) 차단
+    const onCtrlWheel = (e: WheelEvent) => {
       if (e.ctrlKey && !isZoomAllowedZone(e.target)) e.preventDefault();
     };
-    document.addEventListener("gesturestart", blockPageZoomGesture as any, { passive: false } as any);
-    document.addEventListener("gesturechange", blockPageZoomGesture as any, { passive: false } as any);
-    document.addEventListener("gestureend", blockPageZoomGesture as any, { passive: false } as any);
-    document.addEventListener("wheel", blockCtrlWheel, { passive: false });
-
-    // 공통 스타일
+  
+    // 4) 길게 눌러서 이미지 저장/선택 방지(원하실 경우 유지)
+    const onContextMenu = (e: Event) => {
+      // 지도 영역 제외
+      if (!isZoomAllowedZone(e.target)) e.preventDefault();
+    };
+  
+    document.addEventListener("touchstart", onTouchStartBlockPinch, { passive: false });
+    document.addEventListener("gesturestart", onGestureAny as any, { passive: false } as any);
+    document.addEventListener("gesturechange", onGestureAny as any, { passive: false } as any);
+    document.addEventListener("gestureend", onGestureAny as any, { passive: false } as any);
+  
+    document.addEventListener("touchend", onTouchEndBlockDoubleTap, { passive: false });
+    document.addEventListener("dblclick", onDblClick, { capture: true }); // iOS Safari 스마트줌 대응
+  
+    document.addEventListener("wheel", onCtrlWheel, { passive: false });
+    document.addEventListener("contextmenu", onContextMenu);
+  
+    // 전역 스타일: 텍스트 자동확대 방지 + 기본 터치 액션
     const style = document.createElement("style");
     style.textContent = `
-      img { -webkit-touch-callout: none !important; user-select: none !important; }
-      body { touch-action: manipulation; } /* 탭/클릭은 허용, 제스처 확대는 상단에서 차단 */
+      html, body { -webkit-text-size-adjust: 100% !important; } /* iOS의 글자만 확대 방지 */
+      body { touch-action: manipulation; overscroll-behavior: none; }
     `;
     document.head.appendChild(style);
-
+  
     return () => {
-      document.removeEventListener("touchstart", preventMultiTouchOnImg as any);
-      document.removeEventListener("gesturestart", preventGestureOnImg as any);
-      document.removeEventListener("gesturechange", preventGestureOnImg as any);
-      document.removeEventListener("gestureend", preventGestureOnImg as any);
-      document.removeEventListener("touchend", preventDoubleTapOnImg as any);
-      document.removeEventListener("contextmenu", preventContextOnImg as any);
-
-      document.removeEventListener("gesturestart", blockPageZoomGesture as any);
-      document.removeEventListener("gesturechange", blockPageZoomGesture as any);
-      document.removeEventListener("gestureend", blockPageZoomGesture as any);
-      document.removeEventListener("wheel", blockCtrlWheel as any);
-
+      document.removeEventListener("touchstart", onTouchStartBlockPinch as any);
+      document.removeEventListener("gesturestart", onGestureAny as any);
+      document.removeEventListener("gesturechange", onGestureAny as any);
+      document.removeEventListener("gestureend", onGestureAny as any);
+  
+      document.removeEventListener("touchend", onTouchEndBlockDoubleTap as any);
+      document.removeEventListener("dblclick", onDblClick as any);
+  
+      document.removeEventListener("wheel", onCtrlWheel as any);
+      document.removeEventListener("contextmenu", onContextMenu as any);
+  
       document.head.removeChild(style);
     };
   }, []);
